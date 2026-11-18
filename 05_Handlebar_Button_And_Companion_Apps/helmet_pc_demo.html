@@ -1,0 +1,2556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Helmet - Judge Presentation & Live Digital Twin</title>
+  <!-- Leaflet CSS & JS for Interactive Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Google Fonts & Font Awesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-bg: rgba(18, 25, 41, 0.85);
+      --card-border: rgba(56, 189, 248, 0.2);
+      --accent-cyan: #06b6d4;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-orange: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --text-main: #f1f5f9;
+      --text-dim: #94a3b8;
+      --glow-blue: 0 0 18px rgba(59, 130, 246, 0.7);
+      --glow-green: 0 0 18px rgba(16, 185, 129, 0.7);
+      --glow-orange: 0 0 18px rgba(245, 158, 11, 0.8);
+      --glow-red: 0 0 20px rgba(239, 68, 68, 0.9);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Rajdhani', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* TOP HEADER BAR */
+    header {
+      background: linear-gradient(90deg, #090d16 0%, #111827 50%, #090d16 100%);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 58px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      z-index: 1000;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .brand-icon {
+      font-size: 24px;
+      color: var(--accent-cyan);
+      filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.6));
+    }
+
+    .brand-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: 1px;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-badge {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--accent-cyan);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #64748b;
+      box-shadow: 0 0 5px rgba(100, 116, 139, 0.5);
+    }
+
+    .status-dot.connected {
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulseGreen 2s infinite;
+    }
+
+    .status-dot.simulating {
+      background: #3b82f6;
+      box-shadow: 0 0 10px #3b82f6;
+    }
+
+    @keyframes pulseGreen {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
+    }
+
+    .btn {
+      background: rgba(30, 41, 59, 0.8);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: rgba(51, 65, 85, 0.9);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+    }
+
+    .btn-ble {
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      border: 1px solid #60a5fa;
+      color: white;
+    }
+
+    .btn-ble:hover {
+      box-shadow: 0 0 14px rgba(37, 99, 235, 0.6);
+    }
+
+    .btn-serial {
+      background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+      border: 1px solid #818cf8;
+      color: white;
+    }
+
+    .btn-sound {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    /* MAIN SPLIT CONTAINER */
+    .split-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 58px);
+      overflow: hidden;
+    }
+
+    /* LEFT PANE: HELMET TWIN & TELEMETRY */
+    .left-pane {
+      flex: 1;
+      background: radial-gradient(circle at 30% 20%, #131b2e 0%, #0b0f19 80%);
+      border-right: 1px solid rgba(56, 189, 248, 0.2);
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 14px;
+      overflow-y: auto;
+    }
+
+    /* RIGHT PANE: MAP & DEMO PRESENTATION */
+    .right-pane {
+      flex: 1;
+      background: #090d16;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* SECTION CARD */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 14px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 6px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* =========================================
+       HELMET 3D/SVG VISUALIZER & VISOR
+       ========================================= */
+    .helmet-visualizer-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(20, 30, 50, 0.7) 0%, rgba(12, 18, 30, 0.9) 100%);
+    }
+
+    .helmet-display-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    .servo-gauge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      width: 90px;
+    }
+
+    .gauge-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .gauge-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .gauge-bar-container {
+      width: 70px;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .gauge-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+      width: 20%;
+      transition: width 0.3s ease;
+    }
+
+    /* Interactive Helmet Illustration */
+    .helmet-avatar-box {
+      width: 170px;
+      height: 150px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .helmet-shell {
+      position: absolute;
+      width: 130px;
+      height: 120px;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 2px solid #475569;
+      border-radius: 65px 65px 45px 35px;
+      box-shadow: inset 0 8px 15px rgba(255,255,255,0.15), 0 10px 25px rgba(0,0,0,0.6);
+      top: 10px;
+    }
+
+    .helmet-accent-stripe {
+      position: absolute;
+      width: 130px;
+      height: 12px;
+      background: linear-gradient(90deg, #0284c7, #06b6d4, #0284c7);
+      top: 35px;
+      border-radius: 6px;
+      opacity: 0.8;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+    }
+
+    .helmet-visor-blade {
+      position: absolute;
+      width: 114px;
+      height: 52px;
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.35) 0%, rgba(14, 165, 233, 0.15) 100%);
+      border: 2px solid #38bdf8;
+      border-radius: 0 0 25px 25px;
+      top: 55px;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 4px 15px rgba(56, 189, 248, 0.25);
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: top center;
+    }
+
+    .helmet-visor-blade.open {
+      transform: translateY(-28px) scaleY(0.4) rotateX(40deg);
+      border-color: #f59e0b;
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.5);
+      background: rgba(245, 158, 11, 0.2);
+    }
+
+    .visor-status-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 3px 12px;
+      border-radius: 12px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #10b981;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .visor-status-badge.open {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #f59e0b;
+    }
+
+    .visor-controls-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .visor-controls-row .btn {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      min-height: 44px;
+      justify-content: center;
+    }
+
+    .btn-sm {
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* =========================================
+       9-PIXEL WS2811 LED MODULE STRIP
+       ========================================= */
+    .led-strip-card {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.9) 0%, rgba(9, 14, 26, 0.95) 100%);
+    }
+
+    .modules-cluster {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin: 8px 0;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .module-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 4px;
+      border-radius: 6px;
+      background: rgba(30, 41, 59, 0.3);
+      border: 1px solid rgba(255,255,255,0.05);
+      position: relative;
+    }
+
+    .module-box.active-module {
+      border-color: rgba(56, 189, 248, 0.5);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    }
+
+    .module-tag {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .led-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .pixel-led {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 2px solid #334155;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+      transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
+      position: relative;
+    }
+
+    .pixel-led::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 4px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.6);
+      opacity: 0.3;
+    }
+
+    /* LED States */
+    .led-off {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      box-shadow: none !important;
+    }
+
+    .led-blue {
+      background: #3b82f6 !important;
+      border-color: #60a5fa !important;
+      box-shadow: 0 0 16px #3b82f6, inset 0 0 6px #ffffff !important;
+    }
+
+    .led-green {
+      background: #10b981 !important;
+      border-color: #34d399 !important;
+      box-shadow: 0 0 16px #10b981, inset 0 0 6px #ffffff !important;
+    }
+
+    .led-orange {
+      background: #f59e0b !important;
+      border-color: #fbbf24 !important;
+      box-shadow: 0 0 18px #f59e0b, inset 0 0 8px #ffffff !important;
+    }
+
+    .led-red {
+      background: #ef4444 !important;
+      border-color: #f87171 !important;
+      box-shadow: 0 0 18px #ef4444, inset 0 0 8px #ffffff !important;
+    }
+
+    .led-strobe-blue {
+      background: #2563eb !important;
+      border-color: #60a5fa !important;
+      box-shadow: 0 0 22px #2563eb, inset 0 0 8px #ffffff !important;
+    }
+
+    /* SIREN & AI RADAR ALERT */
+    .siren-alert-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: linear-gradient(90deg, rgba(239, 68, 68, 0.25), rgba(37, 99, 235, 0.25));
+      border: 1px solid #ef4444;
+      border-radius: 6px;
+      margin-top: 8px;
+      animation: alertFlash 0.5s infinite alternate;
+    }
+
+    .siren-alert-banner.active {
+      display: flex;
+    }
+
+    @keyframes alertFlash {
+      0% { border-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+      100% { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+    }
+
+    .siren-title {
+      font-weight: 700;
+      color: #fca5a5;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* HARDWARE SENSORS & PERIPHERALS ROW */
+    .peripherals-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .peripheral-item {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 6px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .peripheral-name {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+    }
+
+    .peripheral-status {
+      font-size: 12px;
+      font-weight: 600;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* WIRELESS SERIAL TERMINAL */
+    .terminal-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 140px;
+    }
+
+    .terminal-window {
+      flex: 1;
+      background: #050811;
+      border: 1px solid rgba(56, 189, 248, 0.15);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #38bdf8;
+      overflow-y: auto;
+      height: 120px;
+      line-height: 1.5;
+    }
+
+    .log-line {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .log-time {
+      color: #64748b;
+    }
+
+    .log-tag {
+      font-weight: 700;
+    }
+
+    .log-tag.visor { color: #f59e0b; }
+    .log-tag.siren { color: #ef4444; }
+    .log-tag.nav { color: #10b981; }
+    .log-tag.ble { color: #818cf8; }
+    .log-tag.btn { color: #06b6d4; }
+
+    /* =========================================
+       RIGHT PANE: MAP & DEMO CONTROLLER
+       ========================================= */
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #090d16;
+    }
+
+    /* FLOATING HUD CONTROLS OVER MAP */
+    .map-hud-overlay {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+      z-index: 500;
+    }
+
+    .hud-nav-box {
+      background: rgba(11, 15, 25, 0.92);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 12px;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      pointer-events: auto;
+    }
+
+    .maneuver-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--accent-cyan);
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+    }
+
+    .nav-instruction-details {
+      flex: 1;
+      margin-left: 16px;
+    }
+
+    .nav-dist {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .nav-text {
+      font-size: 14px;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+
+    .trip-stats {
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* DEMO CONTROLS BAR (BOTTOM OF MAP) */
+    .map-bottom-bar {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      background: rgba(11, 15, 25, 0.94);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 12px;
+      padding: 12px 16px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 500;
+    }
+
+    .demo-timeline-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .demo-stage-badge {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: #f59e0b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .demo-controls-btns {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-play {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: 1px solid #34d399;
+      color: white;
+      padding: 8px 18px;
+      font-size: 14px;
+    }
+
+    .btn-play:hover {
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    }
+
+    .btn-play.playing {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      border-color: #fbbf24;
+    }
+
+    /* SCENARIO QUICK JUMP TABS (Up/Down Vertical Scroll Grid) */
+    .scenarios-scroll {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+      max-height: 120px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 6px;
+      scroll-behavior: smooth;
+    }
+
+    .scenarios-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .scenarios-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 4px;
+    }
+
+    .scenarios-scroll::-webkit-scrollbar-thumb {
+      background: var(--accent-cyan);
+      border-radius: 4px;
+    }
+
+    .scenario-pill {
+      background: rgba(30, 41, 59, 0.75);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      transition: all 0.2s;
+    }
+
+    .scenario-pill:hover, .scenario-pill.active {
+      background: rgba(6, 182, 212, 0.25);
+      border-color: var(--accent-cyan);
+      color: #38bdf8;
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .scenario-pill.siren-pill {
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    .scenario-pill.siren-pill:hover, .scenario-pill.siren-pill.active {
+      background: rgba(239, 68, 68, 0.35);
+      border-color: #ef4444;
+      color: #fff;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.6);
+    }
+
+    /* CUSTOM MAP ICONS & 3D REALISTIC VEHICLES */
+    /* 3D MAP PERSPECTIVE MODE */
+    .right-pane.perspective-3d #map {
+      transform: perspective(900px) rotateX(46deg) scale(1.15);
+      transform-origin: center 75%;
+      transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .right-pane.perspective-3d .map-hud-overlay {
+      transform: translateY(-8px);
+    }
+
+    /* REALISTIC 3D MOTORCYCLE AVATAR */
+    .rider-3d-container {
+      width: 52px;
+      height: 60px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center 65%;
+      transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.8));
+    }
+
+    /* Forward Headlight Projection Beam Illuminating Road */
+    .bike-headlight-cone {
+      position: absolute;
+      top: -55px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 28px solid transparent;
+      border-right: 28px solid transparent;
+      border-top: 65px solid rgba(56, 189, 248, 0.45);
+      filter: blur(4px);
+      pointer-events: none;
+      z-index: 2;
+      border-radius: 50% 50% 0 0;
+      animation: headlightFlicker 0.15s infinite alternate;
+    }
+
+    @keyframes headlightFlicker {
+      0% { opacity: 0.85; filter: blur(3px); }
+      100% { opacity: 1; filter: blur(4.5px); }
+    }
+
+    /* 3D Motorcycle Chassis Structure */
+    .bike-chassis-3d {
+      width: 24px;
+      height: 48px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .bike-wheel-front {
+      width: 8px;
+      height: 14px;
+      background: #0f172a;
+      border: 2px solid #64748b;
+      border-radius: 4px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.9);
+      position: absolute;
+      top: 0;
+    }
+
+    .bike-bodywork {
+      width: 22px;
+      height: 32px;
+      background: linear-gradient(180deg, #0284c7 0%, #0369a1 40%, #0c4a6e 100%);
+      border: 2px solid #38bdf8;
+      border-radius: 11px 11px 8px 8px;
+      position: absolute;
+      top: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.6), 0 4px 12px rgba(2, 132, 199, 0.7);
+    }
+
+    .bike-windshield {
+      width: 14px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 4px 4px 2px 2px;
+      margin-top: 2px;
+      box-shadow: 0 0 6px #ffffff;
+    }
+
+    .rider-helmet-top {
+      width: 14px;
+      height: 14px;
+      background: radial-gradient(circle at 35% 35%, #f8fafc 0%, #94a3b8 60%, #334155 100%);
+      border: 1px solid #ffffff;
+      border-radius: 50%;
+      margin-top: 1px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+
+    .bike-handlebars {
+      position: absolute;
+      top: 10px;
+      width: 32px;
+      height: 4px;
+      background: #334155;
+      border-radius: 2px;
+      border: 1px solid #94a3b8;
+      z-index: 9;
+    }
+
+    .bike-taillight {
+      width: 10px;
+      height: 4px;
+      background: #ef4444;
+      border-radius: 2px;
+      position: absolute;
+      bottom: -2px;
+      box-shadow: 0 0 10px #ef4444;
+    }
+
+    .bike-wheel-rear {
+      width: 10px;
+      height: 16px;
+      background: #0f172a;
+      border: 2px solid #475569;
+      border-radius: 4px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.9);
+      position: absolute;
+      bottom: -4px;
+      z-index: 1;
+    }
+
+    /* REALISTIC 3D EMERGENCY AMBULANCE WITH STROBE LIGHTBAR */
+    .ambu-3d-container {
+      width: 58px;
+      height: 84px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center center;
+      transition: transform 0.4s ease-out;
+      filter: drop-shadow(0 12px 20px rgba(0,0,0,0.85));
+    }
+
+    /* Expanding Acoustic Sound Wavefront Radiating from Ambulance */
+    .ambu-sound-wave {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border: 2px solid rgba(239, 68, 68, 0.8);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: soundWaveExpand 1.2s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .ambu-sound-wave.wave-2 {
+      animation-delay: 0.6s;
+      border-color: rgba(59, 130, 246, 0.8);
+    }
+
+    @keyframes soundWaveExpand {
+      0% { width: 30px; height: 30px; opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+      100% { width: 160px; height: 160px; opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+    }
+
+    .ambu-van-body {
+      width: 32px;
+      height: 64px;
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px 8px 6px 6px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.8), 0 6px 16px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+
+    .ambu-windshield {
+      width: 24px;
+      height: 12px;
+      background: #0f172a;
+      border-radius: 4px 4px 2px 2px;
+      margin-top: 4px;
+      border: 1px solid #475569;
+    }
+
+    /* Rooftop Red/Blue Emergency Strobe Lightbar */
+    .ambu-roof-lightbar {
+      position: absolute;
+      top: 18px;
+      width: 28px;
+      height: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      padding: 1px 2px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.6);
+      z-index: 15;
+    }
+
+    .strobe-red {
+      width: 7px;
+      height: 6px;
+      background: #ef4444;
+      border-radius: 2px;
+      animation: strobeRedFlash 0.25s infinite alternate;
+    }
+
+    .strobe-blue {
+      width: 7px;
+      height: 6px;
+      background: #3b82f6;
+      border-radius: 2px;
+      animation: strobeBlueFlash 0.25s infinite alternate;
+    }
+
+    .strobe-white {
+      width: 6px;
+      height: 6px;
+      background: #ffffff;
+      border-radius: 2px;
+      animation: strobeWhiteFlash 0.12s infinite alternate;
+    }
+
+    @keyframes strobeRedFlash {
+      0% { opacity: 1; box-shadow: 0 0 18px #ef4444, 0 0 30px #ef4444; }
+      100% { opacity: 0.15; box-shadow: none; }
+    }
+
+    @keyframes strobeBlueFlash {
+      0% { opacity: 0.15; box-shadow: none; }
+      100% { opacity: 1; box-shadow: 0 0 18px #3b82f6, 0 0 30px #3b82f6; }
+    }
+
+    @keyframes strobeWhiteFlash {
+      0% { opacity: 1; }
+      100% { opacity: 0.2; }
+    }
+
+    .ambu-cross {
+      margin-top: 14px;
+      color: #ef4444;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .ambu-stripes {
+      position: absolute;
+      bottom: 6px;
+      width: 100%;
+      height: 6px;
+      background: repeating-linear-gradient(45deg, #ef4444, #ef4444 4px, #facc15 4px, #facc15 8px);
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.3);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP HEADER -->
+  <header>
+    <div class="brand-section">
+      <i class="fa-solid fa-helmet-safety brand-icon"></i>
+      <div>
+        <div class="brand-title">SMART HELMET HUD</div>
+      </div>
+      <div class="brand-badge">ESP32-S3 AI NAV SYSTEM</div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Connection Indicator -->
+      <div class="status-pill">
+        <div id="statusDot" class="status-dot simulating"></div>
+        <span id="statusText">VIRTUAL SIMULATOR</span>
+      </div>
+
+      <!-- Hardware Connect Buttons -->
+      <button id="btnConnectBLE" class="btn btn-ble" title="Connect directly to ESP32-S3 wirelessly over Web Bluetooth">
+        <i class="fa-brands fa-bluetooth-b"></i> Connect BLE
+      </button>
+
+      <button id="btnConnectSerial" class="btn btn-serial" title="Connect to ESP32-S3 Serial Monitor (USB / Bluetooth COM)">
+        <i class="fa-solid fa-plug"></i> Web Serial
+      </button>
+
+      <!-- 3D Perspective Cockpit View Toggle -->
+      <button id="btnToggle3D" class="btn" style="background: rgba(6, 182, 212, 0.2); border-color: var(--accent-cyan);" onclick="toggle3DView()" title="Toggle 3D Cockpit Perspective vs 2D Plan View">
+        <i class="fa-solid fa-cube"></i> 3D Cockpit
+      </button>
+
+      <!-- Audio Mute/Unmute -->
+      <button id="btnToggleAudio" class="btn btn-sound" title="Toggle Synthesized Emergency Siren & Sound FX">
+        <i id="audioIcon" class="fa-solid fa-volume-high"></i> Siren & Sound
+      </button>
+
+      <!-- Mute Page Animations Toggle -->
+      <button id="btnMuteAnimations" class="btn btn-sound" onclick="toggleMuteAnimations()" title="Mute or Freeze on-screen HUD LED Flashing & Animations">
+        <i id="animMuteIcon" class="fa-solid fa-wand-magic-sparkles"></i> <span id="animMuteLabel">Mute Animations</span>
+      </button>
+
+      <!-- Siren OFF / Clear Alert Button -->
+      <button id="btnSirenOff" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); border: 1px solid #f87171; color: white;" onclick="turnSirenOff()" title="Turn Off / Clear Emergency Siren Alert">
+        <i class="fa-solid fa-bell-slash"></i> Siren OFF
+      </button>
+    </div>
+  </header>
+
+  <!-- SPLIT CONTAINER -->
+  <div class="split-container">
+
+    <!-- LEFT HALF: HELMET DIGITAL TWIN & TELEMETRY -->
+    <div class="left-pane">
+
+      <!-- 1. HELMET VISUALIZER & VISOR CARD -->
+      <div class="card helmet-visualizer-card">
+        <div class="card-header" style="width: 100%;">
+          <div class="card-title">
+            <i class="fa-solid fa-robot"></i> Motorized Visor & Servos (MG90S)
+          </div>
+          <div id="visorBadge" class="visor-status-badge">
+            <i class="fa-solid fa-shield-halved"></i> VISOR CLOSED
+          </div>
+        </div>
+
+        <div class="helmet-display-row">
+          <!-- Left Servo Gauge -->
+          <div class="servo-gauge">
+            <span class="gauge-label">L-SERVO (GPIO15)</span>
+            <span id="gaugeAngle1" class="gauge-value">20°</span>
+            <div class="gauge-bar-container">
+              <div id="gaugeBar1" class="gauge-bar" style="width: 11%;"></div>
+            </div>
+            <span style="font-size: 9px; color: #64748b;">Closed: 20° | Open: 85°</span>
+          </div>
+
+          <!-- Helmet 2D Illustration with Visor -->
+          <div class="helmet-avatar-box">
+            <div class="helmet-shell"></div>
+            <div class="helmet-accent-stripe"></div>
+            <div id="helmetVisor" class="helmet-visor-blade"></div>
+          </div>
+
+          <!-- Right Servo Gauge -->
+          <div class="servo-gauge">
+            <span class="gauge-label">R-SERVO (GPIO16)</span>
+            <span id="gaugeAngle2" class="gauge-value">160°</span>
+            <div class="gauge-bar-container">
+              <div id="gaugeBar2" class="gauge-bar" style="width: 89%;"></div>
+            </div>
+            <span style="font-size: 9px; color: #64748b;">Closed: 160° | Open: 95°</span>
+          </div>
+        </div>
+
+        <!-- Visor Action Buttons -->
+        <div class="visor-controls-row">
+          <button id="btnOpenVisor" class="btn btn-sm">
+            <i class="fa-solid fa-chevron-up"></i> Open Visor
+          </button>
+          <button id="btnCloseVisor" class="btn btn-sm">
+            <i class="fa-solid fa-chevron-down"></i> Close Visor
+          </button>
+          <button id="btnToggleVisor" class="btn btn-sm">
+            <i class="fa-solid fa-arrows-rotate"></i> Toggle (Button Sim)
+          </button>
+        </div>
+
+        <!-- Visor Up / Down Speed & Torque Control -->
+        <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-gauge-high" style="color: var(--accent-cyan); font-size: 13px;"></i>
+            <span style="font-size: 12px; font-weight: 600; color: var(--text-dim);">Torque/Speed:</span>
+            <span id="visorSpeedDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #38bdf8;">0ms (Max Torque 🚀)</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <input type="range" id="visorSpeedSlider" min="0" max="30" value="0" step="1" style="width: 90px; cursor: pointer;" oninput="onVisorSpeedChange(this.value)">
+            <button class="btn btn-sm" style="padding: 2px 7px; font-size: 11px; background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); border-color: #f87171; color:#fff;" onclick="setVisorSpeedPreset(0)" title="Max Torque Direct Snap (For heavy visors)">🚀 Max Torque</button>
+            <button class="btn btn-sm" style="padding: 2px 7px; font-size: 11px;" onclick="setVisorSpeedPreset(4)" title="Turbo Fast Speed">⚡ Turbo</button>
+            <button class="btn btn-sm" style="padding: 2px 7px; font-size: 11px;" onclick="setVisorSpeedPreset(12)" title="Normal Speed">🟢 Normal</button>
+            <button class="btn btn-sm" style="padding: 2px 7px; font-size: 11px;" onclick="setVisorSpeedPreset(24)" title="Slow & Smooth">🌊 Smooth</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. WS2811 3-MODULE PIXEL LED ARRAY -->
+      <div class="card led-strip-card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-lightbulb"></i> 3-Module WS2811 Pixel HUD (GPIO 41)
+          </div>
+          <div id="ledPatternBadge" style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--accent-cyan);">
+            IDLE / STANDBY
+          </div>
+        </div>
+
+        <div class="modules-cluster">
+          <!-- Module 1: Right Indicator -->
+          <div id="mod1" class="module-box">
+            <span class="module-tag">Module 1 (Right)</span>
+            <div class="led-row">
+              <div id="led0" class="pixel-led led-off"></div>
+              <div id="led1" class="pixel-led led-off"></div>
+              <div id="led2" class="pixel-led led-off"></div>
+            </div>
+          </div>
+
+          <!-- Module 2: Center / Siren Alert -->
+          <div id="mod2" class="module-box">
+            <span class="module-tag">Module 2 (Center / Siren)</span>
+            <div class="led-row">
+              <div id="led3" class="pixel-led led-off"></div>
+              <div id="led4" class="pixel-led led-off"></div>
+              <div id="led5" class="pixel-led led-off"></div>
+            </div>
+          </div>
+
+          <!-- Module 3: Left Indicator -->
+          <div id="mod3" class="module-box">
+            <span class="module-tag">Module 3 (Left)</span>
+            <div class="led-row">
+              <div id="led6" class="pixel-led led-off"></div>
+              <div id="led7" class="pixel-led led-off"></div>
+              <div id="led8" class="pixel-led led-off"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Siren Emergency Alert Banner -->
+        <div id="sirenBanner" class="siren-alert-banner">
+          <div class="siren-title">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="sirenBannerText">EMERGENCY SIREN DETECTED! YIELD ROADWAY</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #f87171;">AI CONFIDENCE: 92%+</span>
+            <button id="btnDismissSiren" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.5); border: 1px solid #f87171; color: #fff; padding: 3px 10px; font-size: 11px; cursor: pointer;" onclick="turnSirenOff()">
+              <i class="fa-solid fa-bell-slash"></i> Turn Siren OFF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. PERIPHERALS & SENSORS STATUS -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-microchip"></i> System Peripherals & AI Radar
+          </div>
+        </div>
+        <div class="peripherals-grid">
+          <div class="peripheral-item">
+            <span class="peripheral-name">MIC 1 (GPIO 5,6,7)</span>
+            <span class="peripheral-status"><i class="fa-solid fa-microphone"></i> MultiNet V2</span>
+          </div>
+          <div class="peripheral-item">
+            <span class="peripheral-name">MIC 2 (GPIO 9,10,11)</span>
+            <span class="peripheral-status"><i class="fa-solid fa-bullhorn"></i> Siren AI Core 1</span>
+          </div>
+          <div class="peripheral-item">
+            <span class="peripheral-name">HANDLEBAR BTN</span>
+            <span class="peripheral-status"><i class="fa-solid fa-wifi"></i> ESP-NOW Ch 1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. WIRELESS SERIAL TERMINAL -->
+      <div class="card terminal-card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-terminal"></i> Wireless Telemetry Stream
+          </div>
+          <button id="btnClearLogs" class="btn btn-sm" style="padding: 2px 8px; font-size: 10px;">
+            Clear
+          </button>
+        </div>
+        <div id="termWindow" class="terminal-window">
+          <div class="log-line"><span class="log-time">[BOOT]</span><span class="log-tag ble">[SYSTEM]</span> Dual-Core ESP32-S3 N16R8 Ready.</div>
+          <div class="log-line"><span class="log-time">[BOOT]</span><span class="log-tag visor">[VISOR]</span> Servos MG90S Initialized with anti-jam detachment.</div>
+          <div class="log-line"><span class="log-time">[BOOT]</span><span class="log-tag nav">[WS2811]</span> 9-Pixel RMT driver active on GPIO 41.</div>
+          <div class="log-line"><span class="log-time">[BOOT]</span><span class="log-tag siren">[AI]</span> Siren Neural Detector running on Core 1.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT HALF: INTERACTIVE GPS MAP & DEMO CONTROLLER -->
+    <div class="right-pane">
+      <!-- Leaflet Map Container -->
+      <div id="map"></div>
+
+      <!-- TOP FLOATING HUD NAVIGATION BOX -->
+      <div class="map-hud-overlay">
+        <div class="hud-nav-box">
+          <div id="maneuverIcon" class="maneuver-icon-box">
+            <i class="fa-solid fa-arrow-up"></i>
+          </div>
+          <div class="nav-instruction-details">
+            <div id="navDistance" class="nav-dist">-- m</div>
+            <div id="navInstruction" class="nav-text">Preparing Demo Ride Route...</div>
+          </div>
+          <div class="trip-stats">
+            <div>SPEED: <span id="hudSpeed" style="color: #10b981; font-weight:700;">42 km/h</span></div>
+            <div>STATUS: <span id="hudNavStatus" style="color: #38bdf8;">ACTIVE</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM DEMO CONTROLS BAR -->
+      <div class="map-bottom-bar">
+        <div class="demo-timeline-header">
+          <div class="demo-stage-badge">
+            <i class="fa-solid fa-play-circle"></i>
+            <span id="currentScenarioLabel">SCENARIO: CRUISE DEPARTURE</span>
+          </div>
+
+          <div class="demo-controls-btns">
+            <button id="btnPrevScenario" class="btn btn-sm" title="Previous Maneuver">
+              <i class="fa-solid fa-backward-step"></i> Prev
+            </button>
+            <button id="btnPlayDemo" class="btn btn-play" title="Play Full Automated Presentation Ride for Judges">
+              <i class="fa-solid fa-play"></i> Auto Demo
+            </button>
+            <button id="btnNextScenario" class="btn btn-sm" title="Next Maneuver">
+              Next <i class="fa-solid fa-forward-step"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- QUICK JUMP SCENARIO TABS -->
+        <div class="scenarios-scroll">
+          <button class="scenario-pill active" onclick="jumpToScenario(0)">1. Depart</button>
+          <button class="scenario-pill" onclick="jumpToScenario(1)">2. Right 100m (Blue)</button>
+          <button class="scenario-pill" onclick="jumpToScenario(2)">3. Right 50m (Green)</button>
+          <button class="scenario-pill" onclick="jumpToScenario(3)">4. Right Turn (Wave)</button>
+          <button class="scenario-pill" onclick="jumpToScenario(4)">5. Slight Right (Mod 2)</button>
+          <button class="scenario-pill siren-pill" onclick="jumpToScenario(5)">🚨 6. Siren AI Bypass!</button>
+          <button class="scenario-pill" onclick="jumpToScenario(6)">7. Right U-Turn (Mod 1&2)</button>
+          <button class="scenario-pill" onclick="jumpToScenario(7)">8. Slight Left (Mod 2)</button>
+          <button class="scenario-pill" onclick="jumpToScenario(8)">⚠️ 9. Reroute (Red Alert)</button>
+          <button class="scenario-pill" onclick="jumpToScenario(9)">10. Left 100m (Blue)</button>
+          <button class="scenario-pill" onclick="jumpToScenario(10)">11. Left 50m (Green)</button>
+          <button class="scenario-pill" onclick="jumpToScenario(11)">12. Left Turn (Wave)</button>
+          <button class="scenario-pill" onclick="jumpToScenario(12)">13. Left U-Turn (Mod 2&3)</button>
+          <button class="scenario-pill" onclick="jumpToScenario(13)">14. Handlebar Visor Open</button>
+          <button class="scenario-pill" onclick="jumpToScenario(14)">15. Trip End</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCRIPT ENGINE -->
+  <script>
+    /* =========================================================
+     * 1. AUDIO SYNTHESIZER (Web Audio API for realistic demo FX)
+     * ========================================================= */
+    let audioCtx = null;
+    let audioEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.2, gain = 0.15) {
+      if (!audioEnabled) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(gain, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) { }
+    }
+
+    let sirenOsc1 = null;
+    let sirenOsc2 = null;
+    let sirenLfo = null;
+    let sirenGain = null;
+    let sirenPanner = null;
+
+    function startSirenSound(side = 'LEFT') {
+      if (!audioEnabled || sirenOsc1) return;
+      try {
+        initAudio();
+        sirenOsc1 = audioCtx.createOscillator();
+        sirenOsc2 = audioCtx.createOscillator();
+        sirenLfo = audioCtx.createOscillator();
+        const lfoGain1 = audioCtx.createGain();
+        const lfoGain2 = audioCtx.createGain();
+        sirenGain = audioCtx.createGain();
+
+        // 3D Spatial Stereo Panning (Left channel for left-side ambulance)
+        if (audioCtx.createStereoPanner) {
+          sirenPanner = audioCtx.createStereoPanner();
+          sirenPanner.pan.setValueAtTime(side === 'LEFT' ? -0.8 : (side === 'RIGHT' ? 0.8 : 0.0), audioCtx.currentTime);
+        }
+
+        // Dual Harmonic Oscillators for Real-World Emergency Siren Acoustics
+        sirenOsc1.type = 'sawtooth';
+        sirenOsc1.frequency.setValueAtTime(750, audioCtx.currentTime);
+
+        sirenOsc2.type = 'sine';
+        sirenOsc2.frequency.setValueAtTime(1500, audioCtx.currentTime);
+
+        // 1.6 Hz Wail Sweep Modulation
+        sirenLfo.type = 'sine';
+        sirenLfo.frequency.setValueAtTime(1.6, audioCtx.currentTime);
+        lfoGain1.gain.setValueAtTime(380, audioCtx.currentTime);
+        lfoGain2.gain.setValueAtTime(760, audioCtx.currentTime);
+
+        sirenLfo.connect(lfoGain1);
+        lfoGain1.connect(sirenOsc1.frequency);
+        sirenLfo.connect(lfoGain2);
+        lfoGain2.connect(sirenOsc2.frequency);
+
+        sirenGain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+        sirenGain.gain.exponentialRampToValueAtTime(0.22, audioCtx.currentTime + 0.3);
+
+        sirenOsc1.connect(sirenGain);
+        sirenOsc2.connect(sirenGain);
+
+        if (sirenPanner) {
+          sirenGain.connect(sirenPanner);
+          sirenPanner.connect(audioCtx.destination);
+        } else {
+          sirenGain.connect(audioCtx.destination);
+        }
+
+        sirenOsc1.start();
+        sirenOsc2.start();
+        sirenLfo.start();
+      } catch (e) { }
+    }
+
+    function stopSirenSound() {
+      if (sirenOsc1) {
+        try {
+          if (sirenGain) {
+            sirenGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+          }
+          setTimeout(() => {
+            try {
+              if (sirenOsc1) sirenOsc1.stop();
+              if (sirenOsc2) sirenOsc2.stop();
+              if (sirenLfo) sirenLfo.stop();
+              sirenOsc1 = null;
+              sirenOsc2 = null;
+              sirenLfo = null;
+              sirenGain = null;
+              sirenPanner = null;
+            } catch(e) {}
+          }, 350);
+        } catch (e) {
+          sirenOsc1 = null;
+          sirenOsc2 = null;
+          sirenLfo = null;
+        }
+      }
+    }
+
+    function playVisorMotorHum() {
+      playTone(180, 'square', 0.45, 0.08);
+    }
+
+    function playChime(success = true) {
+      if (success) {
+        playTone(880, 'sine', 0.15, 0.1);
+        setTimeout(() => playTone(1320, 'sine', 0.25, 0.1), 100);
+      } else {
+        playTone(330, 'sawtooth', 0.25, 0.12);
+        setTimeout(() => playTone(220, 'sawtooth', 0.35, 0.12), 150);
+      }
+    }
+
+    document.getElementById('btnToggleAudio').addEventListener('click', () => {
+      audioEnabled = !audioEnabled;
+      const icon = document.getElementById('audioIcon');
+      if (audioEnabled) {
+        icon.className = 'fa-solid fa-volume-high';
+        initAudio();
+        playChime(true);
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark';
+        stopSirenSound();
+      }
+    });
+
+    let is3DMode = true;
+    const rightPane = document.querySelector('.right-pane');
+    if (rightPane) rightPane.classList.add('perspective-3d');
+
+    function toggle3DView() {
+      is3DMode = !is3DMode;
+      if (rightPane) {
+        rightPane.classList.toggle('perspective-3d', is3DMode);
+      }
+      const btn = document.getElementById('btnToggle3D');
+      if (btn) {
+        btn.innerHTML = is3DMode ? '<i class="fa-solid fa-cube"></i> 3D Cockpit' : '<i class="fa-solid fa-map"></i> 2D Map';
+      }
+    }
+
+    /* =========================================================
+     * 2. WIRELESS TELEMETRY CONSOLE LOGGER
+     * ========================================================= */
+    const termWindow = document.getElementById('termWindow');
+
+    function logTerminal(tag, message, category = 'system') {
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      const now = new Date();
+      const timeStr = `[${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}]`;
+      line.innerHTML = `<span class="log-time">${timeStr}</span><span class="log-tag ${category}">[${tag}]</span> ${message}`;
+      termWindow.appendChild(line);
+      termWindow.scrollTop = termWindow.scrollHeight;
+    }
+
+    document.getElementById('btnClearLogs').addEventListener('click', () => {
+      termWindow.innerHTML = '';
+    });
+
+    /* =========================================================
+     * 3. VISOR CONTROL & GAUGES
+     * ========================================================= */
+    let visorIsOpen = false;
+    const helmetVisor = document.getElementById('helmetVisor');
+    const visorBadge = document.getElementById('visorBadge');
+    const gaugeAngle1 = document.getElementById('gaugeAngle1');
+    const gaugeAngle2 = document.getElementById('gaugeAngle2');
+    const gaugeBar1 = document.getElementById('gaugeBar1');
+    const gaugeBar2 = document.getElementById('gaugeBar2');
+
+    function updateVisorUI(isOpen) {
+      visorIsOpen = isOpen;
+      if (isOpen) {
+        helmetVisor.classList.add('open');
+        visorBadge.classList.add('open');
+        visorBadge.innerHTML = '<i class="fa-solid fa-shield"></i> VISOR OPEN';
+        gaugeAngle1.innerText = '85°';
+        gaugeAngle2.innerText = '95°';
+        gaugeBar1.style.width = '47%';
+        gaugeBar2.style.width = '53%';
+        logTerminal('VISOR', 'Servos Slew Complete -> OPEN (PWM Detached)', 'visor');
+      } else {
+        helmetVisor.classList.remove('open');
+        visorBadge.classList.remove('open');
+        visorBadge.innerHTML = '<i class="fa-solid fa-shield-halved"></i> VISOR CLOSED';
+        gaugeAngle1.innerText = '20°';
+        gaugeAngle2.innerText = '160°';
+        gaugeBar1.style.width = '11%';
+        gaugeBar2.style.width = '89%';
+        logTerminal('VISOR', 'Servos Slew Complete -> CLOSED (PWM Detached)', 'visor');
+      }
+    }
+
+    function setVisor(open) {
+      if (visorIsOpen === open) return;
+      playVisorMotorHum();
+      updateVisorUI(open);
+      // Inverted hardware mapping: Open UI maps to hardware CLOSE (0°/180°), Close UI maps to hardware OPEN (90°/90°)
+      sendVisorCommandToHardware(open ? 'CLOSE' : 'OPEN');
+    }
+
+    function toggleVisor() {
+      playVisorMotorHum();
+      const nextOpen = !visorIsOpen;
+      updateVisorUI(nextOpen);
+      sendVisorCommandToHardware(nextOpen ? 'CLOSE' : 'OPEN');
+    }
+
+    document.getElementById('btnOpenVisor').addEventListener('click', () => setVisor(true));
+    document.getElementById('btnCloseVisor').addEventListener('click', () => setVisor(false));
+    document.getElementById('btnToggleVisor').addEventListener('click', () => toggleVisor());
+
+    let currentVisorSpeedMs = 0;
+
+    function onVisorSpeedChange(val) {
+      currentVisorSpeedMs = parseInt(val, 10);
+      if (isNaN(currentVisorSpeedMs)) currentVisorSpeedMs = 0;
+      const display = document.getElementById('visorSpeedDisplay');
+      const slider = document.getElementById('visorSpeedSlider');
+      if (slider) slider.value = currentVisorSpeedMs;
+
+      let label = 'Normal';
+      if (currentVisorSpeedMs === 0) label = 'Max Torque 🚀';
+      else if (currentVisorSpeedMs <= 5) label = 'Turbo Fast ⚡';
+      else if (currentVisorSpeedMs <= 15) label = 'Normal 🟢';
+      else label = 'Smooth 🌊';
+
+      if (display) display.innerText = `${currentVisorSpeedMs}ms (${label})`;
+
+      // Adjust CSS transition duration of 2D helmet visor SVG blade
+      if (helmetVisor) {
+        const transSec = (currentVisorSpeedMs === 0) ? 0.22 : (currentVisorSpeedMs * 60) / 1000;
+        helmetVisor.style.transition = `transform ${transSec.toFixed(2)}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
+      }
+
+      sendVisorCommandToHardware(`SPEED:${currentVisorSpeedMs}`);
+      logTerminal('VISOR', `Visor Drive Mode -> ${currentVisorSpeedMs}ms/step (${label})`, 'visor');
+    }
+
+    function setVisorSpeedPreset(ms) {
+      onVisorSpeedChange(ms);
+    }
+
+    /* =========================================================
+     * 4. 9-PIXEL WS2811 LED ARRAY ENGINE
+     * ========================================================= */
+    const pixelElements = [];
+    for (let i = 0; i < 9; i++) {
+      pixelElements.push(document.getElementById(`led${i}`));
+    }
+
+    let activeLedPattern = 'IDLE';
+    let activeLedDist = 0;
+    let sirenAlertActive = false;
+    let animTimer = null;
+    let animFrame = 0;
+    let animationsMuted = false;
+
+    function toggleMuteAnimations() {
+      animationsMuted = !animationsMuted;
+      const btn = document.getElementById('btnMuteAnimations');
+      const lbl = document.getElementById('animMuteLabel');
+      const icon = document.getElementById('animMuteIcon');
+
+      if (animationsMuted) {
+        setAllPixelsClass('led-off');
+        stopSirenSound();
+        if (isAutoPlaying) pauseAutoDemo();
+        if (btn) {
+          btn.style.background = 'linear-gradient(135deg, #d97706 0%, #b45309 100%)';
+          btn.style.borderColor = '#fbbf24';
+          btn.style.color = '#fff';
+        }
+        if (lbl) lbl.innerText = 'Animations Muted';
+        if (icon) icon.className = 'fa-solid fa-eye-slash';
+        logTerminal('SYSTEM', 'Webpage HUD Animations Muted & Frozen', 'system');
+      } else {
+        if (btn) {
+          btn.style.background = 'rgba(15, 23, 42, 0.8)';
+          btn.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+          btn.style.color = 'var(--text-main)';
+        }
+        if (lbl) lbl.innerText = 'Mute Animations';
+        if (icon) icon.className = 'fa-solid fa-wand-magic-sparkles';
+        logTerminal('SYSTEM', 'Webpage Animations Resumed', 'system');
+      }
+    }
+
+    function setAllPixelsClass(className) {
+      pixelElements.forEach(el => el.className = `pixel-led ${className}`);
+    }
+
+    function setPixelClass(idx, className) {
+      if (idx >= 0 && idx < 9) {
+        pixelElements[idx].className = `pixel-led ${className}`;
+      }
+    }
+
+    function renderLedFrame() {
+      if (animationsMuted) {
+        setAllPixelsClass('led-off');
+        return;
+      }
+
+      animFrame++;
+
+      // Check Navigation Patterns
+      if (activeLedPattern === 'IDLE' && !sirenAlertActive) {
+        setAllPixelsClass('led-off');
+        return;
+      }
+
+      if (activeLedPattern === 'REROUTE') {
+        const blinkOn = (Math.floor(animFrame / 4) % 2 === 0);
+        setAllPixelsClass(blinkOn ? 'led-red' : 'led-off');
+      } else if (activeLedDist > 50 && activeLedDist <= 100) {
+        // 100m: Blue pulse/blink
+        const blinkOn = (Math.floor(animFrame / 6) % 2 === 0);
+        const col = blinkOn ? 'led-blue' : 'led-off';
+        applyPatternToModules(activeLedPattern, col);
+      } else if (activeLedDist > 0 && activeLedDist <= 50) {
+        // 50m: Green pulse/blink
+        const blinkOn = (Math.floor(animFrame / 4) % 2 === 0);
+        const col = blinkOn ? 'led-green' : 'led-off';
+        applyPatternToModules(activeLedPattern, col);
+      } else if (activeLedDist === 0 && activeLedPattern !== 'IDLE') {
+        // 0m / Turn Point: Dynamic continuous Orange/Yellow wave!
+        applyMovingWave(activeLedPattern, animFrame);
+      } else {
+        setAllPixelsClass('led-off');
+      }
+
+      // Directional Siren Strobe Overrides:
+      // Left Mic  -> Module 3 (LEDs 6, 7, 8) blinks Red & Blue
+      // Right Mic -> Module 1 (LEDs 0, 1, 2) blinks Red & Blue
+      // Dual Mics -> Modules 1 & 3 (and Center) blink Red & Blue
+      if (sirenAlertActive) {
+        const isRed = (Math.floor(animFrame / 3) % 2 === 0);
+        const colClass = isRed ? 'led-red' : 'led-strobe-blue';
+        if (sirenAlertActive === 'LEFT' || sirenAlertActive === 'BOTH' || sirenAlertActive === true) {
+          for (let i = 6; i <= 8; i++) setPixelClass(i, colClass); // Module 3 (Left)
+        }
+        if (sirenAlertActive === 'RIGHT' || sirenAlertActive === 'BOTH' || sirenAlertActive === true) {
+          for (let i = 0; i <= 2; i++) setPixelClass(i, colClass); // Module 1 (Right)
+        }
+        if (sirenAlertActive === 'BOTH') {
+          for (let i = 3; i <= 5; i++) setPixelClass(i, isRed ? 'led-strobe-blue' : 'led-red');
+        }
+      }
+    }
+
+    function applyPatternToModules(pattern, colorClass) {
+      for (let i = 0; i < 9; i++) {
+        setPixelClass(i, 'led-off');
+      }
+
+      if (pattern === 'R') {
+        // Module 1 (Right): LEDs 0..2
+        for (let i = 0; i <= 2; i++) setPixelClass(i, colorClass);
+      } else if (pattern === 'L') {
+        // Module 3 (Left): LEDs 6..8
+        for (let i = 6; i <= 8; i++) setPixelClass(i, colorClass);
+      } else if (pattern === 'SR' || pattern === 'SL') {
+        // Module 2 (Center): LEDs 3..5
+        if (!sirenAlertActive) {
+          for (let i = 3; i <= 5; i++) setPixelClass(i, colorClass);
+        }
+      } else if (pattern === 'UR') {
+        // Modules 1 & 2: LEDs 0..5
+        for (let i = 0; i <= 2; i++) setPixelClass(i, colorClass);
+        if (!sirenAlertActive) {
+          for (let i = 3; i <= 5; i++) setPixelClass(i, colorClass);
+        }
+      } else if (pattern === 'UL') {
+        // Modules 2 & 3: LEDs 3..8
+        if (!sirenAlertActive) {
+          for (let i = 3; i <= 5; i++) setPixelClass(i, colorClass);
+        }
+        for (let i = 6; i <= 8; i++) setPixelClass(i, colorClass);
+      }
+    }
+
+    function applyMovingWave(pattern, frame) {
+      const step = Math.floor(frame / 3) % 3;
+
+      // Right Wave: Moves rightward (0 -> 1 -> 2)
+      if (pattern === 'R' || pattern === 'SR' || pattern === 'UR') {
+        if (pattern === 'R') {
+          for (let i = 0; i <= 2; i++) setPixelClass(i, (i === step) ? 'led-orange' : 'led-off');
+        } else if (pattern === 'SR') {
+          if (!sirenAlertActive) {
+            for (let i = 3; i <= 5; i++) setPixelClass(i, ((i - 3) === step) ? 'led-orange' : 'led-off');
+          }
+        } else if (pattern === 'UR') {
+          for (let i = 0; i <= 2; i++) setPixelClass(i, (i === step) ? 'led-orange' : 'led-off');
+          if (!sirenAlertActive) {
+            for (let i = 3; i <= 5; i++) setPixelClass(i, ((i - 3) === step) ? 'led-orange' : 'led-off');
+          }
+        }
+      }
+
+      // Left Wave: Moves leftward (8 -> 7 -> 6)
+      if (pattern === 'L' || pattern === 'SL' || pattern === 'UL') {
+        const leftStep = 2 - step;
+        if (pattern === 'L') {
+          for (let i = 6; i <= 8; i++) setPixelClass(i, ((i - 6) === leftStep) ? 'led-orange' : 'led-off');
+        } else if (pattern === 'SL') {
+          if (!sirenAlertActive) {
+            for (let i = 3; i <= 5; i++) setPixelClass(i, ((i - 3) === leftStep) ? 'led-orange' : 'led-off');
+          }
+        } else if (pattern === 'UL') {
+          for (let i = 6; i <= 8; i++) setPixelClass(i, ((i - 6) === leftStep) ? 'led-orange' : 'led-off');
+          if (!sirenAlertActive) {
+            for (let i = 3; i <= 5; i++) setPixelClass(i, ((i - 3) === leftStep) ? 'led-orange' : 'led-off');
+          }
+        }
+      }
+    }
+
+    // Start 28 FPS LED refresh animation loop
+    setInterval(renderLedFrame, 35);
+
+    function updateNavLEDs(pattern, dist) {
+      activeLedPattern = pattern;
+      activeLedDist = dist;
+      const badge = document.getElementById('ledPatternBadge');
+
+      if (pattern === 'IDLE') {
+        badge.innerText = 'IDLE / OFF';
+        badge.style.color = '#94a3b8';
+      } else if (pattern === 'REROUTE') {
+        badge.innerText = '⚠️ REROUTE ALERT (ALL RED)';
+        badge.style.color = '#ef4444';
+        playTone(400, 'sawtooth', 0.3, 0.15);
+      } else {
+        const colName = dist > 50 ? 'BLUE (100m)' : (dist > 0 ? 'GREEN (50m)' : 'ORANGE WAVE (TURN)');
+        badge.innerText = `${pattern} @ ${dist}m -> ${colName}`;
+        badge.style.color = dist > 50 ? '#38bdf8' : (dist > 0 ? '#10b981' : '#f59e0b');
+        if (dist === 0) playTone(900, 'sine', 0.1, 0.08);
+      }
+
+      sendNavCommandToHardware(pattern, dist);
+    }
+
+    function setSirenState(detected) {
+      sirenAlertActive = detected;
+      const banner = document.getElementById('sirenBanner');
+      const textSpan = document.getElementById('sirenBannerText');
+      if (detected) {
+        banner.classList.add('active');
+        startSirenSound();
+        let msg = "EMERGENCY SIREN DETECTED! YIELD ROADWAY";
+        if (detected === 'LEFT') msg = "🚨 SIREN DETECTED [LEFT MIC] -> MODULE 3 STROBING RED/BLUE";
+        else if (detected === 'RIGHT') msg = "🚨 SIREN DETECTED [RIGHT MIC] -> MODULE 1 STROBING RED/BLUE";
+        else if (detected === 'BOTH' || detected === true) msg = "🚨 DUAL SIREN DETECTED [BOTH MICS] -> MODULES 1 & 3 STROBING";
+        if (textSpan) textSpan.innerText = msg;
+        logTerminal('SIREN', `>>> ${msg} <<<`, 'siren');
+      } else {
+        banner.classList.remove('active');
+        stopSirenSound();
+        if (map && ambuMarker && map.hasLayer(ambuMarker)) {
+          map.removeLayer(ambuMarker);
+        }
+        logTerminal('SIREN', 'Siren Cleared -> Normal Lighting Resumed', 'siren');
+      }
+    }
+
+    function turnSirenOff() {
+      setSirenState(false);
+      logTerminal('SIREN', 'Manual Siren Dismissal -> Sent SIREN:OFF to Hardware', 'siren');
+      // Send Siren OFF over BLE
+      if (chrSiren && bleServer && bleServer.connected) {
+        try {
+          const encoder = new TextEncoder();
+          chrSiren.writeValueWithoutResponse(encoder.encode('OFF'));
+        } catch (e) { }
+      }
+      // Send Siren OFF over Serial
+      if (serialWriter) {
+        try {
+          serialWriter.write('SIREN:OFF\n');
+          serialWriter.write('NAV:CLEAR,0\n');
+        } catch (e) { }
+      }
+    }
+
+    /* =========================================================
+     * 5. LEAFLET MAP ENGINE WITH GOOGLE MAPS HYBRID SATELLITE TILES
+     * ========================================================= */
+    const googleHybridLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+
+    const darkCartoLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19
+    });
+
+    const googleStreetsLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+
+    const map = L.map('map', {
+      zoomControl: true,
+      layers: [googleHybridLayer]
+    }).setView([12.9716, 77.5946], 17);
+
+    L.control.layers({
+      "Google Satellite / Hybrid": googleHybridLayer,
+      "Google Streets": googleStreetsLayer,
+      "Dark Mode": darkCartoLayer
+    }, null, { position: 'topright' }).addTo(map);
+
+    // Rider Custom Marker with Realistic 3D Motorcycle avatar and Headlight Beam
+    const riderHtml = `
+      <div id="riderMarkerDiv" class="rider-3d-container">
+        <div class="bike-headlight-cone"></div>
+        <div class="bike-chassis-3d">
+          <div class="bike-wheel-front"></div>
+          <div class="bike-bodywork">
+            <div class="bike-windshield"></div>
+            <div class="rider-helmet-top"></div>
+            <div class="bike-handlebars"></div>
+            <div class="bike-taillight"></div>
+          </div>
+          <div class="bike-wheel-rear"></div>
+        </div>
+      </div>
+    `;
+    const riderIcon = L.divIcon({ html: riderHtml, className: '', iconSize: [52, 60], iconAnchor: [26, 38] });
+    const riderMarker = L.marker([12.9716, 77.5946], { icon: riderIcon }).addTo(map);
+
+    // Realistic 3D Emergency Ambulance Custom Marker with Rooftop Strobes & Sound Waves
+    const ambuHtml = `
+      <div id="ambuMarkerDiv" class="ambu-3d-container">
+        <div class="ambu-sound-wave"></div>
+        <div class="ambu-sound-wave wave-2"></div>
+        <div class="ambu-van-body">
+          <div class="ambu-windshield"></div>
+          <div class="ambu-roof-lightbar">
+            <div class="strobe-red"></div>
+            <div class="strobe-white"></div>
+            <div class="strobe-blue"></div>
+          </div>
+          <div class="ambu-cross"><i class="fa-solid fa-plus"></i></div>
+          <div class="ambu-stripes"></div>
+        </div>
+      </div>
+    `;
+    const ambuIcon = L.divIcon({ html: ambuHtml, className: '', iconSize: [58, 84], iconAnchor: [29, 42] });
+    const ambuMarker = L.marker([12.9700, 77.5930], { icon: ambuIcon });
+
+    // Waypoints for our Demo Presentation Route
+    const demoWaypoints = [
+      { lat: 12.9716, lng: 77.5946 }, // 0. Start
+      { lat: 12.9724, lng: 77.5946 }, // 1. Approaching Right Turn (100m)
+      { lat: 12.9728, lng: 77.5946 }, // 2. Approaching Right Turn (50m)
+      { lat: 12.9732, lng: 77.5946 }, // 3. Turning Right!
+      { lat: 12.9732, lng: 77.5962 }, // 4. Slight Right Fork
+      { lat: 12.9730, lng: 77.5975 }, // 5. Ambulance Bypass!
+      { lat: 12.9728, lng: 77.5990 }, // 6. Right U-Turn
+      { lat: 12.9722, lng: 77.5980 }, // 7. Slight Left
+      { lat: 12.9715, lng: 77.5970 }, // 8. Missed Route / Rerouting!
+      { lat: 12.9708, lng: 77.5960 }, // 9. Approaching Left Turn (100m)
+      { lat: 12.9704, lng: 77.5955 }, // 10. Approaching Left Turn (50m)
+      { lat: 12.9700, lng: 77.5950 }, // 11. Turning Left!
+      { lat: 12.9690, lng: 77.5950 }, // 12. Left U-Turn
+      { lat: 12.9700, lng: 77.5946 }, // 13. Visor Remote Open
+      { lat: 12.9710, lng: 77.5946 }  // 14. Destination
+    ];
+
+    // Draw route polyline with double glowing stroke
+    const routeGlow = L.polyline(demoWaypoints.map(p => [p.lat, p.lng]), {
+      color: '#06b6d4',
+      weight: 10,
+      opacity: 0.4
+    }).addTo(map);
+
+    const routeLine = L.polyline(demoWaypoints.map(p => [p.lat, p.lng]), {
+      color: '#38bdf8',
+      weight: 4,
+      opacity: 0.95,
+      dashArray: '10, 8'
+    }).addTo(map);
+
+    /* 15 SCRIPTED PRESENTATION SCENARIOS */
+    const scenarios = [
+      {
+        id: 0,
+        title: "1. CRUISE DEPARTURE",
+        navIcon: "fa-arrow-up",
+        distText: "Cruising",
+        instruction: "Route started. Head North toward Main Blvd.",
+        speed: "42 km/h",
+        navPattern: "IDLE",
+        navDist: 0,
+        siren: false,
+        visor: false,
+        posIndex: 0,
+        logMsg: "Departure confirmed. Speed stabilized."
+      },
+      {
+        id: 1,
+        title: "2. RIGHT TURN AHEAD (100M)",
+        navIcon: "fa-arrow-right",
+        distText: "100 m",
+        instruction: "In 100 meters, prepare to Turn Right onto Oak Street.",
+        speed: "38 km/h",
+        navPattern: "R",
+        navDist: 100,
+        siren: false,
+        visor: false,
+        posIndex: 1,
+        logMsg: "Navigation Trigger -> Right Turn 100m. Module 1 Blue Pulse active."
+      },
+      {
+        id: 2,
+        title: "3. RIGHT TURN AHEAD (50M)",
+        navIcon: "fa-arrow-right",
+        distText: "50 m",
+        instruction: "In 50 meters, Turn Right onto Oak Street.",
+        speed: "28 km/h",
+        navPattern: "R",
+        navDist: 50,
+        siren: false,
+        visor: false,
+        posIndex: 2,
+        logMsg: "Navigation Trigger -> Right Turn 50m. Module 1 Green Strobe active."
+      },
+      {
+        id: 3,
+        title: "4. TURN RIGHT NOW (TURN POINT)",
+        navIcon: "fa-arrow-turn-down fa-rotate-270",
+        distText: "NOW",
+        instruction: "Turn Right onto Oak Street now.",
+        speed: "18 km/h",
+        navPattern: "R",
+        navDist: 0,
+        siren: false,
+        visor: false,
+        posIndex: 3,
+        logMsg: "Navigation Trigger -> Turn Point (0m). Continuous Right-moving Orange Wave on Module 1."
+      },
+      {
+        id: 4,
+        title: "5. SLIGHT RIGHT FORK",
+        navIcon: "fa-share",
+        distText: "50 m",
+        instruction: "Take the Slight Right fork toward Expressway.",
+        speed: "45 km/h",
+        navPattern: "SR",
+        navDist: 50,
+        siren: false,
+        visor: false,
+        posIndex: 4,
+        logMsg: "Navigation Trigger -> Slight Right (Center Module 2 Green Blink)."
+      },
+      {
+        id: 5,
+        title: "🚨 6. AMBULANCE OVERTAKE & SIREN AI DETECTION",
+        navIcon: "fa-truck-medical",
+        distText: "YIELD",
+        instruction: "🚨 EMERGENCY AMBULANCE APPROACHING ON LEFT! PULL OVER SAFELY.",
+        speed: "15 km/h",
+        navPattern: "IDLE",
+        navDist: 0,
+        siren: 'LEFT',
+        visor: false,
+        posIndex: 5,
+        logMsg: "MIC 2 (I2S1) ESP-DL AI detected emergency siren! High-intensity Red-Blue Strobe on Module 3 (Left)."
+      },
+      {
+        id: 6,
+        title: "7. RIGHT U-TURN",
+        navIcon: "fa-rotate-right",
+        distText: "NOW",
+        instruction: "Make a Right U-Turn when clear.",
+        speed: "12 km/h",
+        navPattern: "UR",
+        navDist: 0,
+        siren: false,
+        visor: false,
+        posIndex: 6,
+        logMsg: "Navigation Trigger -> Right U-Turn. Synchronized Orange wave across Modules 1 & 2."
+      },
+      {
+        id: 7,
+        title: "8. SLIGHT LEFT MERGE",
+        navIcon: "fa-reply",
+        distText: "50 m",
+        instruction: "Keep Left and merge onto Pine Ave.",
+        speed: "35 km/h",
+        navPattern: "SL",
+        navDist: 50,
+        siren: false,
+        visor: false,
+        posIndex: 7,
+        logMsg: "Navigation Trigger -> Slight Left on Module 2."
+      },
+      {
+        id: 8,
+        title: "⚠️ 9. ROUTE DEVIATION / REROUTING",
+        navIcon: "fa-triangle-exclamation",
+        distText: "RE-ROUTING",
+        instruction: "Off route! Recalculating optimum trajectory...",
+        speed: "30 km/h",
+        navPattern: "REROUTE",
+        navDist: 0,
+        siren: false,
+        visor: false,
+        posIndex: 8,
+        logMsg: "GPS deviation detected. Rerouting alert broadcast -> All 9 LEDs flashing RED."
+      },
+      {
+        id: 9,
+        title: "10. LEFT TURN AHEAD (100M)",
+        navIcon: "fa-arrow-left",
+        distText: "100 m",
+        instruction: "New path confirmed: In 100 meters, Turn Left onto Elm St.",
+        speed: "38 km/h",
+        navPattern: "L",
+        navDist: 100,
+        siren: false,
+        visor: false,
+        posIndex: 9,
+        logMsg: "Navigation Trigger -> Left Turn 100m. Module 3 Blue Pulse active."
+      },
+      {
+        id: 10,
+        title: "11. LEFT TURN AHEAD (50M)",
+        navIcon: "fa-arrow-left",
+        distText: "50 m",
+        instruction: "In 50 meters, Turn Left onto Elm St.",
+        speed: "25 km/h",
+        navPattern: "L",
+        navDist: 50,
+        siren: false,
+        visor: false,
+        posIndex: 10,
+        logMsg: "Navigation Trigger -> Left Turn 50m. Module 3 Green Strobe active."
+      },
+      {
+        id: 11,
+        title: "12. TURN LEFT NOW (TURN POINT)",
+        navIcon: "fa-arrow-turn-down fa-rotate-90",
+        distText: "NOW",
+        instruction: "Turn Left onto Elm St now.",
+        speed: "16 km/h",
+        navPattern: "L",
+        navDist: 0,
+        siren: false,
+        visor: false,
+        posIndex: 11,
+        logMsg: "Navigation Trigger -> Turn Point (0m). Continuous Left-moving Orange Wave on Module 3."
+      },
+      {
+        id: 12,
+        title: "13. LEFT U-TURN",
+        navIcon: "fa-rotate-left",
+        distText: "NOW",
+        instruction: "Perform Left U-Turn into parking facility.",
+        speed: "10 km/h",
+        navPattern: "UL",
+        navDist: 0,
+        siren: false,
+        visor: false,
+        posIndex: 12,
+        logMsg: "Navigation Trigger -> Left U-Turn. Synchronized wave across Modules 2 & 3."
+      },
+      {
+        id: 13,
+        title: "14. HANDLEBAR REMOTE / VISOR OPEN",
+        navIcon: "fa-shield",
+        distText: "VISOR UP",
+        instruction: "Handlebar button tapped / Voice recognized 'Open Visor'.",
+        speed: "5 km/h",
+        navPattern: "IDLE",
+        navDist: 0,
+        siren: false,
+        visor: true,
+        posIndex: 13,
+        logMsg: "ESP-NOW Handlebar button packet received -> Dual MG90S Servos smooth slew to 85°/95°."
+      },
+      {
+        id: 14,
+        title: "15. DESTINATION ARRIVED",
+        navIcon: "fa-flag-checkered",
+        distText: "ARRIVED",
+        instruction: "You have arrived at your destination safely. Trip Complete!",
+        speed: "0 km/h",
+        navPattern: "IDLE",
+        navDist: 0,
+        siren: false,
+        visor: true,
+        posIndex: 14,
+        logMsg: "Trip ended successfully. Deaf rider arrived safely with full optical navigation."
+      }
+    ];
+
+    let currentScenarioIdx = 0;
+    let isAutoPlaying = false;
+    let autoPlayTimer = null;
+
+    function applyScenario(idx) {
+      if (idx < 0 || idx >= scenarios.length) return;
+      currentScenarioIdx = idx;
+      const sc = scenarios[idx];
+
+      // Update Top HUD
+      document.getElementById('maneuverIcon').innerHTML = `<i class="fa-solid ${sc.navIcon}"></i>`;
+      document.getElementById('navDistance').innerText = sc.distText;
+      document.getElementById('navInstruction').innerText = sc.instruction;
+      document.getElementById('hudSpeed').innerText = sc.speed;
+      document.getElementById('currentScenarioLabel').innerText = sc.title;
+
+      // Update Scenario Pills
+      document.querySelectorAll('.scenario-pill').forEach((pill, i) => {
+        pill.classList.toggle('active', i === idx);
+      });
+
+      // Update Rider Map Marker & Rotate 3D Bike along Road Direction
+      const pt = demoWaypoints[sc.posIndex];
+      riderMarker.setLatLng([pt.lat, pt.lng]);
+      map.panTo([pt.lat, pt.lng], { animate: true });
+
+      // Calculate bearing angle and cornering banking lean angle
+      let headingDeg = 0;
+      let leanAngle = 0;
+      if (sc.posIndex < demoWaypoints.length - 1) {
+        const nextPt = demoWaypoints[sc.posIndex + 1];
+        const dLng = (nextPt.lng - pt.lng) * Math.cos(pt.lat * Math.PI / 180);
+        const dLat = nextPt.lat - pt.lat;
+        headingDeg = (Math.atan2(dLng, dLat) * 180 / Math.PI + 360) % 360;
+      }
+      
+      if (sc.navPattern === 'L' || sc.navPattern === 'UL' || sc.navPattern === 'SL') {
+        leanAngle = -16; // Lean left into turn
+      } else if (sc.navPattern === 'R' || sc.navPattern === 'UR' || sc.navPattern === 'SR') {
+        leanAngle = 16;  // Lean right into turn
+      }
+
+      const markerDiv = document.getElementById('riderMarkerDiv');
+      if (markerDiv) {
+        markerDiv.style.transform = `rotate(${headingDeg}deg) rotateZ(${leanAngle}deg)`;
+      }
+
+      // Handle Ambulance Simulation in Scenario 5 (Multi-stage overtake & real siren audio)
+      if (sc.id === 5) {
+        const startLat = pt.lat - 0.0007;
+        const startLng = pt.lng - 0.0004;
+        ambuMarker.setLatLng([startLat, startLng]).addTo(map);
+        
+        const ambuDiv = document.getElementById('ambuMarkerDiv');
+        if (ambuDiv) ambuDiv.style.transform = `rotate(${headingDeg}deg)`;
+
+        // Start realistic dual-tone siren sound with left-channel stereo pan
+        startSirenSound('LEFT');
+
+        // Multi-stage smooth overtaking trajectory
+        setTimeout(() => {
+          ambuMarker.setLatLng([pt.lat - 0.0001, pt.lng - 0.0003]);
+        }, 1000);
+
+        setTimeout(() => {
+          ambuMarker.setLatLng([pt.lat + 0.0004, pt.lng - 0.0001]);
+        }, 2200);
+
+        setTimeout(() => {
+          ambuMarker.setLatLng([pt.lat + 0.0011, pt.lng + 0.0004]);
+        }, 3600);
+      } else {
+        if (map.hasLayer(ambuMarker)) map.removeLayer(ambuMarker);
+      }
+
+      // Update LEDs & Siren & Visor
+      setSirenState(sc.siren);
+      updateNavLEDs(sc.navPattern, sc.navDist);
+      if (sc.visor !== visorIsOpen) {
+        setVisor(sc.visor);
+      }
+
+      logTerminal('DEMO', sc.logMsg, sc.siren ? 'siren' : (sc.visor ? 'visor' : 'nav'));
+    }
+
+    function jumpToScenario(idx) {
+      if (isAutoPlaying) pauseAutoDemo();
+      applyScenario(idx);
+    }
+
+    document.getElementById('btnNextScenario').addEventListener('click', () => {
+      if (currentScenarioIdx < scenarios.length - 1) {
+        jumpToScenario(currentScenarioIdx + 1);
+      }
+    });
+
+    document.getElementById('btnPrevScenario').addEventListener('click', () => {
+      if (currentScenarioIdx > 0) {
+        jumpToScenario(currentScenarioIdx - 1);
+      }
+    });
+
+    // AUTO PRESENTATION RUNNER
+    const btnPlayDemo = document.getElementById('btnPlayDemo');
+
+    function toggleAutoDemo() {
+      if (isAutoPlaying) {
+        pauseAutoDemo();
+      } else {
+        startAutoDemo();
+      }
+    }
+
+    function startAutoDemo() {
+      isAutoPlaying = true;
+      btnPlayDemo.classList.add('playing');
+      btnPlayDemo.innerHTML = '<i class="fa-solid fa-pause"></i> Pause Demo';
+      playChime(true);
+
+      function step() {
+        if (!isAutoPlaying) return;
+        if (currentScenarioIdx < scenarios.length - 1) {
+          applyScenario(currentScenarioIdx + 1);
+          // Timing: Give the ambulance siren extra time to showcase
+          const delay = (scenarios[currentScenarioIdx].siren) ? 4500 : 3200;
+          autoPlayTimer = setTimeout(step, delay);
+        } else {
+          pauseAutoDemo();
+          playChime(true);
+        }
+      }
+
+      // If at end, wrap to start
+      if (currentScenarioIdx >= scenarios.length - 1) {
+        applyScenario(0);
+      }
+      autoPlayTimer = setTimeout(step, 2000);
+    }
+
+    function pauseAutoDemo() {
+      isAutoPlaying = false;
+      if (autoPlayTimer) clearTimeout(autoPlayTimer);
+      btnPlayDemo.classList.remove('playing');
+      btnPlayDemo.innerHTML = '<i class="fa-solid fa-play"></i> Auto Demo';
+    }
+
+    btnPlayDemo.addEventListener('click', toggleAutoDemo);
+
+    // Initial Load
+    applyScenario(0);
+
+    /* =========================================================
+     * 6. HARDWARE CONNECTIVITY (WEB BLUETOOTH & WEB SERIAL)
+     * ========================================================= */
+    const BLE_SERVICE_UUID  = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+    const CHR_NAV_UUID      = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+    const CHR_VISOR_UUID    = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
+    const CHR_SIREN_UUID    = 'beb5483e-36e1-4688-b7f5-ea07361b26aa';
+    const CHR_LOG_UUID      = 'beb5483e-36e1-4688-b7f5-ea07361b26ab';
+
+    let bleDevice = null;
+    let bleServer = null;
+    let chrNav = null;
+    let chrVisor = null;
+    let chrSiren = null;
+    let chrLog = null;
+
+    let serialPort = null;
+    let serialWriter = null;
+
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+
+    function setConnectedUI(type) {
+      statusDot.className = 'status-dot connected';
+      statusText.innerText = `CONNECTED (${type})`;
+      logTerminal('SYNC', `Live Hardware Sync Active via ${type}.`, 'ble');
+      playChime(true);
+    }
+
+    // Web Bluetooth Pairing
+    document.getElementById('btnConnectBLE').addEventListener('click', async () => {
+      if (!navigator.bluetooth) {
+        alert("Web Bluetooth is not supported on this browser. Use Google Chrome or Microsoft Edge.");
+        return;
+      }
+      try {
+        logTerminal('BLE', 'Searching for "SmartHelmet" Bluetooth peripheral...', 'ble');
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [
+            { name: 'SmartHelmet' },
+            { namePrefix: 'Smart' }
+          ],
+          optionalServices: [BLE_SERVICE_UUID]
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', () => {
+          statusDot.className = 'status-dot simulating';
+          statusText.innerText = 'VIRTUAL SIMULATOR';
+          logTerminal('BLE', 'ESP32-S3 Disconnected.', 'ble');
+        });
+
+        bleServer = await bleDevice.gatt.connect();
+        const service = await bleServer.getPrimaryService(BLE_SERVICE_UUID);
+
+        chrNav = await service.getCharacteristic(CHR_NAV_UUID);
+        chrVisor = await service.getCharacteristic(CHR_VISOR_UUID);
+        chrSiren = await service.getCharacteristic(CHR_SIREN_UUID);
+
+        // Subscribe to Siren notifications
+        await chrSiren.startNotifications();
+        chrSiren.addEventListener('characteristicvaluechanged', (e) => {
+          const val = e.target.value.getUint8(0);
+          setSirenState(val === 1);
+        });
+
+        // Subscribe to Visor notifications
+        try {
+          await chrVisor.startNotifications();
+          chrVisor.addEventListener('characteristicvaluechanged', (e) => {
+            const val = e.target.value.getUint8(0);
+            updateVisorUI(val === 0);
+          });
+        } catch (err) { }
+
+        // Subscribe to Telemetry Logs
+        try {
+          chrLog = await service.getCharacteristic(CHR_LOG_UUID);
+          await chrLog.startNotifications();
+          chrLog.addEventListener('characteristicvaluechanged', (e) => {
+            const decoder = new TextDecoder('utf-8');
+            const msg = decoder.decode(e.target.value);
+            logTerminal('ESP32', msg, 'ble');
+          });
+        } catch (err) { }
+
+        setConnectedUI('BLE WIRELESS');
+      } catch (err) {
+        logTerminal('BLE', `Pairing cancelled or failed: ${err.message}`, 'system');
+      }
+    });
+
+    // Web Serial Pairing (USB Cable or Bluetooth SPP COM Port)
+    document.getElementById('btnConnectSerial').addEventListener('click', async () => {
+      if (!navigator.serial) {
+        alert("Web Serial requires Google Chrome or Microsoft Edge on PC, and must be opened via http://localhost:8080 (not LAN IP).");
+        logTerminal('UART', 'Web Serial API unavailable. Please open http://localhost:8080 in Google Chrome.', 'system');
+        return;
+      }
+      try {
+        logTerminal('UART', 'Requesting USB Serial Port (Select ESP32-S3 / COM port in pop-up)...', 'system');
+        serialPort = await navigator.serial.requestPort();
+        await serialPort.open({ baudRate: 115200 });
+
+        setConnectedUI('SERIAL COM');
+        logTerminal('UART', 'Serial Port Connected at 115200 baud!', 'system');
+
+        const textDecoder = new TextDecoderStream();
+        serialPort.readable.pipeTo(textDecoder.writable);
+        const reader = textDecoder.readable.getReader();
+        const textEncoder = new TextEncoderStream();
+        textEncoder.readable.pipeTo(serialPort.writable);
+        serialWriter = textEncoder.writable.getWriter();
+
+        // Read serial lines in background loop
+        (async () => {
+          let lineBuffer = '';
+          while (serialPort && serialPort.readable) {
+            try {
+              const { value, done } = await reader.read();
+              if (done) break;
+              if (value) {
+                lineBuffer += value;
+                let lines = lineBuffer.split('\n');
+                lineBuffer = lines.pop();
+                for (const line of lines) {
+                  const trimmed = line.trim();
+                  if (trimmed) {
+                    logTerminal('UART', trimmed, 'system');
+                    // Sync visor from UART log
+                    if (trimmed.includes('Visor Command -> OPEN') || trimmed.includes('[VISOR] OPEN')) {
+                      updateVisorUI(false);
+                    } else if (trimmed.includes('Visor Command -> CLOSE') || trimmed.includes('[VISOR] CLOSE')) {
+                      updateVisorUI(true);
+                    } else if (trimmed.includes('SIREN CONFIRMED: LEFT') || trimmed.includes('LEFT Siren Detected') || trimmed.includes('SIREN ALERT LEFT')) {
+                      setSirenState('LEFT');
+                    } else if (trimmed.includes('SIREN CONFIRMED: RIGHT') || trimmed.includes('RIGHT Siren Detected') || trimmed.includes('SIREN ALERT RIGHT')) {
+                      setSirenState('RIGHT');
+                    } else if (trimmed.includes('SIREN CONFIRMED: BOTH') || trimmed.includes('DUAL Siren Detected') || trimmed.includes('SIREN ALERT BOTH')) {
+                      setSirenState('BOTH');
+                    } else if (trimmed.includes('SIREN CONFIRMED')) {
+                      setSirenState('BOTH');
+                    } else if (trimmed.includes('Siren cleared') || trimmed.includes('returned to normal')) {
+                      setSirenState(false);
+                    }
+                  }
+                }
+              }
+            } catch (err) {
+              break;
+            }
+          }
+        })();
+      } catch (err) {
+        console.error("Serial error:", err);
+        if (err.name === 'NotFoundError') {
+          logTerminal('UART', 'Port selection cancelled.', 'system');
+        } else if (err.message && err.message.includes('Failed to open')) {
+          logTerminal('UART', 'ERROR: Port is busy or locked by another app (e.g. IDF monitor/Arduino). Close other serial monitors and retry.', 'siren');
+          alert("Cannot open COM port: It is already in use by another program (like VS Code Serial Monitor or ESP-IDF terminal). Please close it and retry.");
+        } else {
+          logTerminal('UART', `Serial error: ${err.message}`, 'system');
+        }
+      }
+    });
+
+    // Send Commands to Physical S3 Hardware
+    async function sendNavCommandToHardware(turnType, dist) {
+      const packet = (turnType === 'REROUTE') ? 'REROUTE' : `${turnType},${dist}`;
+
+      // Over BLE
+      if (chrNav && bleServer && bleServer.connected) {
+        try {
+          const encoder = new TextEncoder();
+          await chrNav.writeValueWithoutResponse(encoder.encode(packet));
+        } catch (e) { }
+      }
+
+      // Over Serial
+      if (serialWriter) {
+        try {
+          await serialWriter.write(`NAV:${packet}\n`);
+        } catch (e) { }
+      }
+    }
+
+    async function sendVisorCommandToHardware(cmd) {
+      // Over BLE
+      if (chrVisor && bleServer && bleServer.connected) {
+        try {
+          const encoder = new TextEncoder();
+          await chrVisor.writeValueWithoutResponse(encoder.encode(cmd));
+        } catch (e) { }
+      }
+
+      // Over Serial
+      if (serialWriter) {
+        try {
+          await serialWriter.write(`VISOR:${cmd}\n`);
+        } catch (e) { }
+      }
+    }
+  </script>
+</body>
+</html>

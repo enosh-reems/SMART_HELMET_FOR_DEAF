@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Smart Helmet - 3D Mobile Navigator & Visor Remote</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#00e5ff">
+  <!-- Leaflet CSS & JS for Real Google Maps Engine -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=JetBrains+Mono:wght@500;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(console.error);
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card: #131b2e;
+      --accent: #00e5ff;
+      --open: #00e676;
+      --close: #ff1744;
+      --blue: #0284c7;
+      --orange: #f59e0b;
+      --red: #ef4444;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --border: #202d4a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      background: #0f1626;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      z-index: 1000;
+      flex-shrink: 0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: 'Chakra Petch', sans-serif;
+      letter-spacing: 0.5px;
+    }
+
+    .brand span {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(0, 229, 255, 0.15);
+      border: 1px solid rgba(0, 229, 255, 0.4);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .hdr-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-hdr {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .btn-ble {
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      color: #fff;
+      border: 1px solid #60a5fa;
+    }
+
+    .btn-ble.connected {
+      background: rgba(0, 230, 118, 0.2);
+      border-color: var(--open);
+      color: var(--open);
+    }
+
+    /* Siren Alert Overlay */
+    #sirenAlert {
+      display: none;
+      background: linear-gradient(90deg, rgba(239,68,68,0.95), rgba(37,99,235,0.95));
+      color: #fff;
+      padding: 8px 12px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      animation: alertPulse 0.4s infinite alternate;
+      z-index: 999;
+      flex-shrink: 0;
+      box-shadow: 0 4px 15px rgba(239,68,68,0.5);
+    }
+
+    @keyframes alertPulse {
+      0% { opacity: 0.85; filter: brightness(1); }
+      100% { opacity: 1; filter: brightness(1.35); }
+    }
+
+    /* Turn Prompt Banner */
+    .turn-prompt {
+      background: #111827;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 500;
+      flex-shrink: 0;
+    }
+
+    .turn-icon-box {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--accent);
+      border: 1px solid var(--border);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+    }
+
+    .turn-details {
+      flex: 1;
+    }
+
+    .turn-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.3px;
+    }
+
+    .turn-sub {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent);
+      margin-top: 1px;
+    }
+
+    .speed-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--open);
+      background: rgba(0, 230, 118, 0.12);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-align: right;
+    }
+
+    /* Search & Route Input */
+    .search-bar {
+      background: #0f1626;
+      padding: 6px 10px;
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+      z-index: 500;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .search-input::placeholder {
+      color: var(--muted);
+    }
+
+    .btn-search {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* Map Viewport & 3D Perspective Mode */
+    .map-container {
+      flex: 1;
+      width: 100%;
+      position: relative;
+      background: #0b0f19;
+      overflow: hidden;
+      perspective: 900px;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #0b0f19;
+      z-index: 1;
+      transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .map-container.perspective-3d #map {
+      transform: rotateX(46deg) scale(1.18);
+      transform-origin: center 75%;
+    }
+
+    /* 3D Floating Mode Controls */
+    .map-quick-tools {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 400;
+    }
+
+    .btn-map-tool {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-map-tool.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* REALISTIC 3D MOTORCYCLE AVATAR */
+    .rider-3d-container {
+      width: 48px;
+      height: 56px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center 65%;
+      transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.85));
+    }
+
+    .bike-headlight-cone {
+      position: absolute;
+      top: -50px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 24px solid transparent;
+      border-right: 24px solid transparent;
+      border-top: 58px solid rgba(0, 229, 255, 0.45);
+      filter: blur(3.5px);
+      pointer-events: none;
+      z-index: 2;
+      border-radius: 50% 50% 0 0;
+      animation: bikeFlicker 0.15s infinite alternate;
+    }
+
+    @keyframes bikeFlicker {
+      0% { opacity: 0.85; }
+      100% { opacity: 1; }
+    }
+
+    .bike-chassis-3d {
+      width: 22px;
+      height: 44px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .bike-wheel-front {
+      width: 7px;
+      height: 13px;
+      background: #0f172a;
+      border: 2px solid #64748b;
+      border-radius: 4px;
+      position: absolute;
+      top: 0;
+    }
+
+    .bike-bodywork {
+      width: 20px;
+      height: 28px;
+      background: linear-gradient(180deg, #0284c7 0%, #0369a1 40%, #0c4a6e 100%);
+      border: 2px solid #00e5ff;
+      border-radius: 10px 10px 7px 7px;
+      position: absolute;
+      top: 7px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.6), 0 4px 10px rgba(0, 229, 255, 0.5);
+    }
+
+    .bike-windshield {
+      width: 13px;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 3px 3px 1px 1px;
+      margin-top: 2px;
+      box-shadow: 0 0 5px #fff;
+    }
+
+    .rider-helmet-top {
+      width: 13px;
+      height: 13px;
+      background: radial-gradient(circle at 35% 35%, #f8fafc 0%, #94a3b8 60%, #334155 100%);
+      border: 1px solid #ffffff;
+      border-radius: 50%;
+      margin-top: 1px;
+    }
+
+    .bike-handlebars {
+      position: absolute;
+      top: 9px;
+      width: 28px;
+      height: 3px;
+      background: #334155;
+      border-radius: 2px;
+      border: 1px solid #94a3b8;
+      z-index: 9;
+    }
+
+    .bike-taillight {
+      width: 9px;
+      height: 3px;
+      background: #ef4444;
+      border-radius: 2px;
+      position: absolute;
+      bottom: -2px;
+      box-shadow: 0 0 8px #ef4444;
+    }
+
+    .bike-wheel-rear {
+      width: 9px;
+      height: 15px;
+      background: #0f172a;
+      border: 2px solid #475569;
+      border-radius: 4px;
+      position: absolute;
+      bottom: -4px;
+      z-index: 1;
+    }
+
+    /* REALISTIC 3D EMERGENCY AMBULANCE AVATAR */
+    .ambu-3d-container {
+      width: 54px;
+      height: 78px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center center;
+      transition: transform 0.4s ease-out;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.85));
+    }
+
+    .ambu-sound-wave {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      border: 2px solid rgba(239, 68, 68, 0.85);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: soundWaveExpand 1.2s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .ambu-sound-wave.wave-2 {
+      animation-delay: 0.6s;
+      border-color: rgba(59, 130, 246, 0.85);
+    }
+
+    @keyframes soundWaveExpand {
+      0% { width: 25px; height: 25px; opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+      100% { width: 140px; height: 140px; opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+    }
+
+    .ambu-van-body {
+      width: 30px;
+      height: 60px;
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px 8px 5px 5px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.8), 0 6px 14px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+
+    .ambu-windshield {
+      width: 22px;
+      height: 11px;
+      background: #0f172a;
+      border-radius: 4px 4px 2px 2px;
+      margin-top: 3px;
+      border: 1px solid #475569;
+    }
+
+    .ambu-roof-lightbar {
+      position: absolute;
+      top: 16px;
+      width: 26px;
+      height: 7px;
+      background: #1e293b;
+      border-radius: 3px;
+      display: flex;
+      justify-content: space-between;
+      padding: 1px 2px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.6);
+      z-index: 15;
+    }
+
+    .strobe-red {
+      width: 6px;
+      height: 5px;
+      background: #ef4444;
+      border-radius: 2px;
+      animation: strobeRedFlash 0.25s infinite alternate;
+    }
+
+    .strobe-blue {
+      width: 6px;
+      height: 5px;
+      background: #3b82f6;
+      border-radius: 2px;
+      animation: strobeBlueFlash 0.25s infinite alternate;
+    }
+
+    .strobe-white {
+      width: 5px;
+      height: 5px;
+      background: #ffffff;
+      border-radius: 2px;
+      animation: strobeWhiteFlash 0.12s infinite alternate;
+    }
+
+    @keyframes strobeRedFlash {
+      0% { opacity: 1; box-shadow: 0 0 16px #ef4444; }
+      100% { opacity: 0.15; box-shadow: none; }
+    }
+
+    @keyframes strobeBlueFlash {
+      0% { opacity: 0.15; box-shadow: none; }
+      100% { opacity: 1; box-shadow: 0 0 16px #3b82f6; }
+    }
+
+    @keyframes strobeWhiteFlash {
+      0% { opacity: 1; }
+      100% { opacity: 0.2; }
+    }
+
+    .ambu-cross {
+      margin-top: 12px;
+      color: #ef4444;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .ambu-stripes {
+      position: absolute;
+      bottom: 4px;
+      width: 100%;
+      height: 5px;
+      background: repeating-linear-gradient(45deg, #ef4444, #ef4444 4px, #facc15 4px, #facc15 8px);
+    }
+
+    /* Bottom Control Deck */
+    .deck {
+      background: #0f1626;
+      border-top: 1px solid var(--border);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 1000;
+      flex-shrink: 0;
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.6);
+      max-height: 52vh;
+      overflow-y: auto;
+    }
+
+    .visor-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-toggle-visor {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 2px solid var(--border);
+      color: #fff;
+      padding: 12px;
+      min-height: 52px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-toggle-visor.is-open {
+      border-color: var(--open);
+      color: var(--open);
+      box-shadow: 0 0 14px rgba(0, 230, 118, 0.3);
+    }
+
+    .btn-toggle-visor.is-closed {
+      border-color: var(--close);
+      color: var(--close);
+    }
+
+    .btn-quick {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 800;
+      min-height: 52px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .btn-quick:active { transform: scale(0.95); }
+    .btn-quick.open { background: rgba(0, 230, 118, 0.18); color: var(--open); border-color: rgba(0,230,118,0.4); }
+    .btn-quick.close { background: rgba(255, 23, 68, 0.18); color: var(--close); border-color: rgba(255,23,68,0.4); }
+
+    /* Vertical Up-Down Scroll Navigation Grid */
+    .nav-section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      padding: 2px 0;
+    }
+
+    .nav-triggers {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      max-height: 180px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 4px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .nav-triggers::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .nav-triggers::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 4px;
+    }
+
+    .nav-triggers::-webkit-scrollbar-thumb {
+      background: var(--accent);
+      border-radius: 4px;
+    }
+
+    .btn-nav-trig {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+      padding: 12px 6px;
+      min-height: 50px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 3px;
+      cursor: pointer;
+      transition: all 0.15s ease-out;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .btn-nav-trig:hover, .btn-nav-trig:active {
+      color: #fff;
+      border-color: var(--accent);
+      background: rgba(0, 229, 255, 0.2);
+      transform: scale(0.97);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.35);
+    }
+
+    .btn-nav-trig.siren-btn {
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    .btn-nav-trig.siren-btn:hover, .btn-nav-trig.siren-btn:active {
+      color: #fff;
+      background: rgba(239, 68, 68, 0.35);
+      border-color: #ef4444;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+    }
+
+    /* Simulation Bar */
+    .sim-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0b0f19;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted);
+    }
+
+    .btn-sim-play {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: none;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-sim-play.playing {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <i class="fa-solid fa-helmet-safety" style="color:var(--accent);"></i>
+      Smart Helmet <span>NAV & VISOR</span>
+    </div>
+    <div class="hdr-actions">
+      <button class="btn-hdr" id="btnAudio" onclick="toggleAudio()">
+        <i class="fa-solid fa-volume-xmark" id="audioIcon"></i>
+      </button>
+      <button class="btn-hdr btn-ble" id="bleBtn" onclick="toggleBLE()">
+        <i class="fa-brands fa-bluetooth-b"></i> <span id="bleLabel">Connect BLE</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="sirenAlert">
+    🚨 EMERGENCY SIREN DETECTED! CHECK MIRRORS & PULL OVER 🚨
+  </div>
+
+  <div class="turn-prompt">
+    <div class="turn-icon-box" id="turnIcon">
+      <i class="fa-solid fa-location-arrow"></i>
+    </div>
+    <div class="turn-details">
+      <div class="turn-text" id="turnTitle">GPS Navigation Ready</div>
+      <div class="turn-sub" id="turnSub">Select destination or tap test route</div>
+    </div>
+    <div class="speed-badge" id="speedBadge">0 KM/H</div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" class="search-input" id="destInput" placeholder="Search destination (e.g. Marine Drive, Hospital)..." onkeydown="if(event.key==='Enter') searchDestination()"/>
+    <button class="btn-search" onclick="searchDestination()"><i class="fa-solid fa-magnifying-glass"></i></button>
+  </div>
+
+  <div class="map-container perspective-3d" id="mapContainer">
+    <div id="map"></div>
+    <div class="map-quick-tools">
+      <button class="btn-map-tool active" id="btn3D" onclick="toggle3DView()">
+        <i class="fa-solid fa-cube"></i> 3D Mode
+      </button>
+      <button class="btn-map-tool" id="btnRecenter" onclick="recenterMap()">
+        <i class="fa-solid fa-crosshairs"></i> Recenter
+      </button>
+    </div>
+  </div>
+
+  <div class="deck">
+    <!-- Visor Remote Control (1-Touch) -->
+    <div class="visor-row">
+      <button class="btn-toggle-visor is-closed" id="visorToggleBtn" onclick="sendVisor('TOGGLE')">
+        <i class="fa-solid fa-shield"></i>
+        <span id="visorToggleLabel">VISOR CLOSED (TAP TO OPEN)</span>
+      </button>
+      <button class="btn-quick open" onclick="sendVisor('OPEN')">▲ OPEN</button>
+      <button class="btn-quick close" onclick="sendVisor('CLOSE')">▼ CLOSE</button>
+    </div>
+
+    <!-- Visor Speed & Torque Control (Mobile) -->
+    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin-top: 6px; font-size: 11px;">
+      <div style="display: flex; align-items: center; gap: 5px; color: var(--accent);">
+        <i class="fa-solid fa-gauge-high"></i>
+        <span style="color: var(--dim);">Drive:</span>
+        <span id="mobileVisorSpeedLbl" style="color: #fff; font-weight: 700;">Max Torque 🚀 (0ms)</span>
+      </div>
+      <div style="display: flex; gap: 4px;">
+        <button class="btn-hdr" style="padding: 3px 7px; font-size: 10px; height: auto; background: linear-gradient(135deg, #ef4444, #b91c1c); color:#fff; border-color:#f87171;" onclick="setMobileVisorSpeed(0)">🚀 Max</button>
+        <button class="btn-hdr" style="padding: 3px 7px; font-size: 10px; height: auto;" onclick="setMobileVisorSpeed(4)">⚡ Turbo</button>
+        <button class="btn-hdr" style="padding: 3px 7px; font-size: 10px; height: auto;" onclick="setMobileVisorSpeed(12)">🟢 Normal</button>
+        <button class="btn-hdr" style="padding: 3px 7px; font-size: 10px; height: auto;" onclick="setMobileVisorSpeed(24)">🌊 Smooth</button>
+      </div>
+    </div>
+
+    <!-- Quick Optical Turn Tests for Deaf Rider Guidance -->
+    <div class="nav-section-title">
+      <span><i class="fa-solid fa-compass"></i> Optical Navigation Triggers</span>
+      <span style="font-size: 10px; color: var(--dim);"><i class="fa-solid fa-arrows-up-down"></i> Scroll Up / Down</span>
+    </div>
+    <div class="nav-triggers">
+      <button class="btn-nav-trig" onclick="triggerNav('R', 100, '➡️ Right Turn in 100m', 'Right Blue Pulse')">
+        <i class="fa-solid fa-arrow-right" style="color: #60a5fa;"></i>
+        <span>R 100m</span>
+      </button>
+      <button class="btn-nav-trig" onclick="triggerNav('R', 50, '➡️ Right Turn in 50m', 'Right Green Pulse')">
+        <i class="fa-solid fa-arrow-right" style="color: #34d399;"></i>
+        <span>R 50m</span>
+      </button>
+      <button class="btn-nav-trig" onclick="triggerNav('R', 0, '➡️ Turn Right Now!', 'Right Orange Wave')">
+        <i class="fa-solid fa-arrow-right" style="color: #fbbf24;"></i>
+        <span>R Turn</span>
+      </button>
+
+      <button class="btn-nav-trig" onclick="triggerNav('L', 100, '⬅️ Left Turn in 100m', 'Left Blue Pulse')">
+        <i class="fa-solid fa-arrow-left" style="color: #60a5fa;"></i>
+        <span>L 100m</span>
+      </button>
+      <button class="btn-nav-trig" onclick="triggerNav('L', 50, '⬅️ Left Turn in 50m', 'Left Green Pulse')">
+        <i class="fa-solid fa-arrow-left" style="color: #34d399;"></i>
+        <span>L 50m</span>
+      </button>
+      <button class="btn-nav-trig" onclick="triggerNav('L', 0, '⬅️ Turn Left Now!', 'Left Orange Wave')">
+        <i class="fa-solid fa-arrow-left" style="color: #fbbf24;"></i>
+        <span>L Turn</span>
+      </button>
+
+      <button class="btn-nav-trig siren-btn" onclick="testSirenAlert()">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>Test Siren</span>
+      </button>
+      <button class="btn-nav-trig" style="background: rgba(239, 68, 68, 0.25); border: 1px solid #ef4444; color: #fca5a5; font-weight: 700;" onclick="sirenOff()">
+        <i class="fa-solid fa-bell-slash"></i>
+        <span>Siren OFF</span>
+      </button>
+      <button class="btn-nav-trig" onclick="triggerNav('UR', 0, '↪️ Right U-Turn Now', 'Modules 1 & 2 Wave')">
+        <i class="fa-solid fa-arrow-rotate-right" style="color: #fb923c;"></i>
+        <span>U-Turn</span>
+      </button>
+
+      <button class="btn-nav-trig" onclick="triggerNav('REROUTE', 0, '🔄 Re-routing trajectory...', 'All 3 Modules Red')">
+        <i class="fa-solid fa-arrows-rotate" style="color: #f87171;"></i>
+        <span>Re-route</span>
+      </button>
+      <button class="btn-nav-trig" onclick="triggerNav('CLEAR', 0, 'Straight Route', 'Normal Running')">
+        <i class="fa-solid fa-circle-check" style="color: #4ade80;"></i>
+        <span>Clear</span>
+      </button>
+      <button class="btn-nav-trig" onclick="sendVisor('TOGGLE')">
+        <i class="fa-solid fa-shield" style="color: var(--accent);"></i>
+        <span>Visor</span>
+      </button>
+    </div>
+
+    <!-- Simulation Runner -->
+    <div class="sim-bar">
+      <span id="simStatus">3D Simulation: Ready</span>
+      <button class="btn-sim-play" id="btnSimPlay" onclick="toggleSimulation()">▶ Start 3D Demo</button>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================
+     * 1. BLE GATT SETUP (ESP32-S3 SmartHelmet)
+     * ========================================================= */
+    const SERVICE_UUID    = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+    const NAV_CHAR_UUID   = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+    const VISOR_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
+    const SIREN_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26aa';
+
+    let bleDevice = null;
+    let navChar = null;
+    let visorChar = null;
+    let sirenChar = null;
+    let isVisorOpen = false;
+
+    async function toggleBLE() {
+      if (bleDevice && bleDevice.gatt.connected) {
+        bleDevice.gatt.disconnect();
+        return;
+      }
+
+      if (!navigator.bluetooth) {
+        alert("Web Bluetooth requires Google Chrome (Android/PC) or Bluefy browser (iPhone).");
+        return;
+      }
+
+      try {
+        const statusEl = document.getElementById('bleLabel');
+        statusEl.innerText = "Pairing...";
+
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [
+            { name: 'SmartHelmet' },
+            { namePrefix: 'Smart' }
+          ],
+          optionalServices: [SERVICE_UUID]
+        });
+
+        statusEl.innerText = "Connecting GATT...";
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+        const server = await bleDevice.gatt.connect();
+        
+        statusEl.innerText = "Discovering Svc...";
+        const service = await server.getPrimaryService(SERVICE_UUID);
+
+        statusEl.innerText = "Linking Chars...";
+        try { navChar = await service.getCharacteristic(NAV_CHAR_UUID); } catch(e) { console.warn("Nav char error:", e); }
+        try { visorChar = await service.getCharacteristic(VISOR_CHAR_UUID); } catch(e) { console.warn("Visor char error:", e); }
+        try { sirenChar = await service.getCharacteristic(SIREN_CHAR_UUID); } catch(e) { console.warn("Siren char error:", e); }
+
+        // Enable Siren notifications if available
+        if (sirenChar) {
+          try {
+            await sirenChar.startNotifications();
+            sirenChar.addEventListener('characteristicvaluechanged', (e) => {
+              const val = e.target.value.getUint8(0);
+              handleSirenEvent(val);
+            });
+          } catch(e) {
+            console.warn("Siren notification error:", e);
+          }
+        }
+
+        // Read visor status
+        if (visorChar) {
+          try {
+            const v = await visorChar.readValue();
+            updateVisorUI(v.getUint8(0) === 0);
+          } catch(e) {}
+        }
+
+        document.getElementById('bleBtn').classList.add('connected');
+        statusEl.innerText = "Connected";
+        showToast("CONNECTED TO SMARTHELMET BLE", "#00e676");
+      } catch (err) {
+        console.error("BLE Error:", err);
+        document.getElementById('bleLabel').innerText = "Connect BLE";
+        showToast("BLE: " + (err.message || err), "#ef4444");
+      }
+    }
+
+    function onDisconnected() {
+      document.getElementById('bleBtn').classList.remove('connected');
+      document.getElementById('bleLabel').innerText = "Connect BLE";
+      navChar = null;
+      visorChar = null;
+      sirenChar = null;
+      showToast("BLE Disconnected", "#f59e0b");
+    }
+
+    function showToast(msg, color) {
+      const alertEl = document.getElementById('sirenAlert');
+      if (alertEl) {
+        alertEl.style.display = 'block';
+        alertEl.style.background = color || '#0284c7';
+        alertEl.innerText = msg;
+        setTimeout(() => { 
+          if (!sirenActive) alertEl.style.display = 'none'; 
+        }, 3000);
+      }
+    }
+
+    async function sendVisor(cmd) {
+      let hwCmd = cmd;
+      if (cmd === 'TOGGLE') {
+        const nextState = !isVisorOpen;
+        updateVisorUI(nextState);
+        hwCmd = nextState ? 'CLOSE' : 'OPEN';
+      } else if (cmd === 'OPEN') {
+        updateVisorUI(true);
+        hwCmd = 'CLOSE';
+      } else if (cmd === 'CLOSE') {
+        updateVisorUI(false);
+        hwCmd = 'OPEN';
+      }
+
+      playMotorHum();
+
+      if (visorChar) {
+        try {
+          const enc = new TextEncoder();
+          const data = enc.encode(hwCmd);
+          if (visorChar.writeValueWithResponse) {
+            await visorChar.writeValueWithResponse(data);
+          } else if (visorChar.writeValue) {
+            await visorChar.writeValue(data);
+          } else {
+            await visorChar.writeValueWithoutResponse(data);
+          }
+        } catch (e) {
+          try {
+            const enc = new TextEncoder();
+            await visorChar.writeValueWithoutResponse(enc.encode(hwCmd));
+          } catch(err2) {}
+        }
+      }
+    }
+
+    function updateVisorUI(open) {
+      isVisorOpen = open;
+      const btn = document.getElementById('visorToggleBtn');
+      const lbl = document.getElementById('visorToggleLabel');
+      if (open) {
+        btn.className = "btn-toggle-visor is-open";
+        lbl.innerText = "VISOR OPEN (TAP TO CLOSE)";
+      } else {
+        btn.className = "btn-toggle-visor is-closed";
+        lbl.innerText = "VISOR CLOSED (TAP TO OPEN)";
+      }
+    }
+
+    let mobileVisorSpeedMs = 0;
+
+    async function setMobileVisorSpeed(ms) {
+      mobileVisorSpeedMs = ms;
+      const lbl = document.getElementById('mobileVisorSpeedLbl');
+      let name = "Normal";
+      if (ms === 0) name = "Max Torque 🚀";
+      else if (ms <= 5) name = "Turbo Fast ⚡";
+      else if (ms <= 15) name = "Normal 🟢";
+      else name = "Smooth 🌊";
+
+      if (lbl) lbl.innerText = `${name} (${ms}ms)`;
+
+      if (visorChar) {
+        try {
+          const enc = new TextEncoder();
+          const cmd = `SPEED:${ms}`;
+          if (visorChar.writeValueWithoutResponse) {
+            await visorChar.writeValueWithoutResponse(enc.encode(cmd));
+          } else if (visorChar.writeValue) {
+            await visorChar.writeValue(enc.encode(cmd));
+          }
+        } catch(e) {}
+      }
+      showToast(`Visor Drive Mode: ${name}`, (ms === 0) ? "#ef4444" : "#38bdf8");
+    }
+
+    async function triggerNav(turn, dist, title, sub) {
+      document.getElementById('turnTitle').innerText = title;
+      document.getElementById('turnSub').innerText = sub;
+
+      const icons = {
+        'R': '<i class="fa-solid fa-arrow-right"></i>',
+        'L': '<i class="fa-solid fa-arrow-left"></i>',
+        'UR': '<i class="fa-solid fa-arrow-rotate-right"></i>',
+        'UL': '<i class="fa-solid fa-arrow-rotate-left"></i>',
+        'REROUTE': '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i>',
+        'CLEAR': '<i class="fa-solid fa-arrow-up"></i>'
+      };
+      document.getElementById('turnIcon').innerHTML = icons[turn] || '<i class="fa-solid fa-arrow-up"></i>';
+
+      if (turn === 'R') setRiderOrientation(90, 16);
+      else if (turn === 'L') setRiderOrientation(270, -16);
+      else if (turn === 'CLEAR') setRiderOrientation(0, 0);
+
+      if (navChar) {
+        try {
+          const enc = new TextEncoder();
+          const data = enc.encode(`${turn},${dist}`);
+          if (navChar.writeValueWithoutResponse) {
+            await navChar.writeValueWithoutResponse(data);
+          } else if (navChar.writeValue) {
+            await navChar.writeValue(data);
+          } else {
+            await navChar.writeValueWithResponse(data);
+          }
+        } catch (e) {
+          console.error("Nav write failed:", e);
+        }
+      }
+    }
+
+    /* =========================================================
+     * 2. REAL WEB AUDIO DUAL-TONE SIREN & MOTOR SOUND ENGINE
+     * ========================================================= */
+    let audioCtx = null;
+    let audioEnabled = false;
+    let sirenOsc1 = null, sirenOsc2 = null, sirenLfo = null, sirenGain = null, sirenPanner = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const icon = document.getElementById('audioIcon');
+      if (audioEnabled) {
+        initAudio();
+        icon.className = "fa-solid fa-volume-high";
+        playChime(true);
+      } else {
+        icon.className = "fa-solid fa-volume-xmark";
+        stopSirenSound();
+      }
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.2, gainVal = 0.1) {
+      if (!audioEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        g.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(g);
+        g.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playMotorHum() {
+      playTone(180, 'square', 0.45, 0.08);
+    }
+
+    function playChime(success = true) {
+      if (success) {
+        playTone(880, 'sine', 0.15, 0.1);
+        setTimeout(() => playTone(1320, 'sine', 0.25, 0.1), 100);
+      }
+    }
+
+    function startSirenSound(pan = -0.7) {
+      if (!audioEnabled) return;
+      initAudio();
+      if (sirenOsc1) return;
+
+      try {
+        sirenOsc1 = audioCtx.createOscillator();
+        sirenOsc2 = audioCtx.createOscillator();
+        sirenLfo  = audioCtx.createOscillator();
+        const lfoGain1 = audioCtx.createGain();
+        const lfoGain2 = audioCtx.createGain();
+        sirenGain = audioCtx.createGain();
+
+        if (audioCtx.createStereoPanner) {
+          sirenPanner = audioCtx.createStereoPanner();
+          sirenPanner.pan.setValueAtTime(pan, audioCtx.currentTime);
+        }
+
+        sirenOsc1.type = 'sawtooth';
+        sirenOsc1.frequency.setValueAtTime(750, audioCtx.currentTime);
+
+        sirenOsc2.type = 'sine';
+        sirenOsc2.frequency.setValueAtTime(1500, audioCtx.currentTime);
+
+        // 1.6 Hz Wail Sweep Modulation matching real emergency sirens
+        sirenLfo.type = 'sine';
+        sirenLfo.frequency.setValueAtTime(1.6, audioCtx.currentTime);
+        lfoGain1.gain.setValueAtTime(380, audioCtx.currentTime);
+        lfoGain2.gain.setValueAtTime(760, audioCtx.currentTime);
+
+        sirenLfo.connect(lfoGain1);
+        lfoGain1.connect(sirenOsc1.frequency);
+        sirenLfo.connect(lfoGain2);
+        lfoGain2.connect(sirenOsc2.frequency);
+
+        sirenGain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+        sirenGain.gain.exponentialRampToValueAtTime(0.22, audioCtx.currentTime + 0.3);
+
+        sirenOsc1.connect(sirenGain);
+        sirenOsc2.connect(sirenGain);
+
+        if (sirenPanner) {
+          sirenGain.connect(sirenPanner);
+          sirenPanner.connect(audioCtx.destination);
+        } else {
+          sirenGain.connect(audioCtx.destination);
+        }
+
+        sirenOsc1.start();
+        sirenOsc2.start();
+        sirenLfo.start();
+      } catch (e) {}
+    }
+
+    function stopSirenSound() {
+      if (sirenOsc1) {
+        try {
+          if (sirenGain) {
+            sirenGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+          }
+          setTimeout(() => {
+            try {
+              if (sirenOsc1) sirenOsc1.stop();
+              if (sirenOsc2) sirenOsc2.stop();
+              if (sirenLfo) sirenLfo.stop();
+              sirenOsc1 = null; sirenOsc2 = null; sirenLfo = null; sirenGain = null; sirenPanner = null;
+            } catch(e) {}
+          }, 350);
+        } catch (e) {
+          sirenOsc1 = null; sirenOsc2 = null; sirenLfo = null;
+        }
+      }
+    }
+
+    /* =========================================================
+     * 3. SIREN & AMBULANCE SPATIAL PLACEMENT
+     * ========================================================= */
+    let sirenActive = false;
+
+    function handleSirenEvent(val) {
+      const alertEl = document.getElementById('sirenAlert');
+      if (val === 1) {
+        sirenActive = true;
+        alertEl.innerText = "🚨 EMERGENCY SIREN [LEFT SIDE] -> MODULE 3 ALERTING 🚨";
+        alertEl.style.display = 'block';
+        alertEl.style.background = 'linear-gradient(90deg, #dc2626, #2563eb)';
+        placeAmbulanceAlongside('LEFT');
+        startSirenSound(-0.75);
+      } else if (val === 2) {
+        sirenActive = true;
+        alertEl.innerText = "🚨 EMERGENCY SIREN [RIGHT SIDE] -> MODULE 1 ALERTING 🚨";
+        alertEl.style.display = 'block';
+        alertEl.style.background = 'linear-gradient(90deg, #2563eb, #dc2626)';
+        placeAmbulanceAlongside('RIGHT');
+        startSirenSound(0.75);
+      } else if (val >= 3) {
+        sirenActive = true;
+        alertEl.innerText = "🚨 EMERGENCY SIREN [DUAL SIDES] -> MODULES 1 & 3 ALERTING 🚨";
+        alertEl.style.display = 'block';
+        placeAmbulanceAlongside('LEFT');
+        startSirenSound(0);
+      } else {
+        sirenActive = false;
+        alertEl.style.display = 'none';
+        removeAmbulance();
+        stopSirenSound();
+      }
+    }
+
+    function placeAmbulanceAlongside(side = 'LEFT') {
+      const offsetLat = (side === 'LEFT') ? 0.00015 : -0.00015;
+      const offsetLng = (side === 'LEFT') ? -0.00025 : 0.00025;
+      const ambuPos = [riderLat + offsetLat, riderLng + offsetLng];
+      ambuMarker.setLatLng(ambuPos);
+      if (!map.hasLayer(ambuMarker)) {
+        ambuMarker.addTo(map);
+      }
+    }
+
+    function removeAmbulance() {
+      if (map.hasLayer(ambuMarker)) {
+        map.removeLayer(ambuMarker);
+      }
+    }
+
+    function testSirenAlert() {
+      if (!sirenActive) {
+        handleSirenEvent(1);
+        setTimeout(() => {
+          if (sirenActive) handleSirenEvent(0);
+        }, 7000);
+      } else {
+        handleSirenEvent(0);
+      }
+    }
+
+    function sirenOff() {
+      handleSirenEvent(0);
+      triggerNav('CLEAR', 0, 'Siren Alert Cleared', 'Normal Running');
+      if (sirenChar) {
+        try {
+          const enc = new TextEncoder();
+          const data = enc.encode('OFF');
+          if (sirenChar.writeValueWithResponse) {
+            sirenChar.writeValueWithResponse(data);
+          } else {
+            sirenChar.writeValueWithoutResponse(data);
+          }
+        } catch(e) {}
+      }
+      showToast("Siren Alert Dismissed & Cleared", "#22c55e");
+    }
+
+    /* =========================================================
+     * 4. REAL GOOGLE MAPS HYBRID & STREETS ENGINE (NO WATERMARKS)
+     * ========================================================= */
+    let riderLat = 12.9716;
+    let riderLng = 77.5946;
+    let currentBearing = 0;
+    let currentTilt = 0;
+
+    // Direct Google Maps High-Res Tile Servers (Watermark-Free)
+    const googleHybridLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: 'Map &copy; Google Maps Satellite'
+    });
+
+    const googleStreetsLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: 'Map &copy; Google Maps Vector'
+    });
+
+    const darkCartoLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: 'CartoDB Dark'
+    });
+
+    const map = L.map('map', {
+      zoomControl: true,
+      layers: [googleHybridLayer]
+    }).setView([riderLat, riderLng], 17);
+
+    L.control.layers({
+      "🛰️ Google Satellite": googleHybridLayer,
+      "🗺️ Google Streets": googleStreetsLayer,
+      "🌙 Dark Mode": darkCartoLayer
+    }, null, { position: 'topright' }).addTo(map);
+
+    // 3D Motorcycle Custom Marker
+    const riderHtml = `
+      <div id="riderMarkerDiv" class="rider-3d-container">
+        <div class="bike-headlight-cone"></div>
+        <div class="bike-chassis-3d">
+          <div class="bike-wheel-front"></div>
+          <div class="bike-bodywork">
+            <div class="bike-windshield"></div>
+            <div class="rider-helmet-top"></div>
+            <div class="bike-handlebars"></div>
+            <div class="bike-taillight"></div>
+          </div>
+          <div class="bike-wheel-rear"></div>
+        </div>
+      </div>
+    `;
+    const riderIcon = L.divIcon({ html: riderHtml, className: '', iconSize: [48, 56], iconAnchor: [24, 36] });
+    const riderMarker = L.marker([riderLat, riderLng], { icon: riderIcon }).addTo(map);
+
+    // 3D Ambulance Custom Marker
+    const ambuHtml = `
+      <div id="ambuMarkerDiv" class="ambu-3d-container">
+        <div class="ambu-sound-wave"></div>
+        <div class="ambu-sound-wave wave-2"></div>
+        <div class="ambu-van-body">
+          <div class="ambu-windshield"></div>
+          <div class="ambu-roof-lightbar">
+            <div class="strobe-red"></div>
+            <div class="strobe-white"></div>
+            <div class="strobe-blue"></div>
+          </div>
+          <div class="ambu-cross"><i class="fa-solid fa-plus"></i></div>
+          <div class="ambu-stripes"></div>
+        </div>
+      </div>
+    `;
+    const ambuIcon = L.divIcon({ html: ambuHtml, className: '', iconSize: [54, 78], iconAnchor: [27, 39] });
+    const ambuMarker = L.marker([12.9700, 77.5930], { icon: ambuIcon });
+
+    let routeLine = null;
+
+    function setRiderOrientation(bearingDeg, bankAngleDeg = 0) {
+      currentBearing = bearingDeg;
+      currentTilt = bankAngleDeg;
+      const el = document.getElementById('riderMarkerDiv');
+      if (el) {
+        el.style.transform = `rotate(${bearingDeg}deg) skewX(${bankAngleDeg}deg)`;
+      }
+    }
+
+    function toggle3DView() {
+      const container = document.getElementById('mapContainer');
+      const btn = document.getElementById('btn3D');
+      const is3D = container.classList.toggle('perspective-3d');
+      btn.classList.toggle('active', is3D);
+      btn.innerHTML = is3D ? '<i class="fa-solid fa-cube"></i> 3D Mode' : '<i class="fa-solid fa-map"></i> 2D Map';
+    }
+
+    function recenterMap() {
+      map.setView([riderLat, riderLng], 17);
+    }
+
+    // Phone Live GPS Geolocation
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition((pos) => {
+        if (!isSimulating) {
+          riderLat = pos.coords.latitude;
+          riderLng = pos.coords.longitude;
+          const speed = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0;
+          document.getElementById('speedBadge').innerText = `${speed} KM/H`;
+          riderMarker.setLatLng([riderLat, riderLng]);
+          if (pos.coords.heading) {
+            setRiderOrientation(pos.coords.heading, 0);
+          }
+          map.panTo([riderLat, riderLng]);
+        }
+      }, (err) => {}, { enableHighAccuracy: true });
+    }
+
+    // OSRM Destination Search
+    async function searchDestination() {
+      const q = document.getElementById('destInput').value.trim();
+      if (!q) return;
+
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const destLat = parseFloat(data[0].lat);
+          const destLng = parseFloat(data[0].lon);
+
+          L.marker([destLat, destLng]).addTo(map).bindPopup(data[0].display_name).openPopup();
+
+          const routeRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${riderLng},${riderLat};${destLng},${destLat}?overview=full&geometries=geojson&steps=true`);
+          const routeData = await routeRes.json();
+
+          if (routeData.routes && routeData.routes.length > 0) {
+            const coords = routeData.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+            if (routeLine) map.removeLayer(routeLine);
+            routeLine = L.polyline(coords, { color: '#00e5ff', weight: 6, opacity: 0.9 }).addTo(map);
+            map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+
+            const steps = routeData.routes[0].legs[0].steps;
+            if (steps.length > 1) {
+              const modifier = steps[1].maneuver.modifier || '';
+              let turn = 'CLEAR';
+              if (modifier.includes('right')) turn = 'R';
+              if (modifier.includes('left')) turn = 'L';
+              triggerNav(turn, Math.round(steps[0].distance), steps[1].maneuver.instruction || 'Follow route', `${Math.round(steps[0].distance)}m ahead`);
+            }
+          }
+        }
+      } catch(e) {
+        console.error("Routing error:", e);
+      }
+    }
+
+    /* =========================================================
+     * 5. 3D SCRIPTED DEMO SIMULATION ENGINE (TEST ON PHONE)
+     * ========================================================= */
+    let isSimulating = false;
+    let simIndex = 0;
+    let simTimer = null;
+
+    const demoRoute = [
+      { lat: 12.9716, lng: 77.5946, bearing: 0, tilt: 0, speed: 42, title: "Cruising North", sub: "Route Started", turn: "CLEAR", dist: 0, siren: 0 },
+      { lat: 12.9724, lng: 77.5946, bearing: 0, tilt: 0, speed: 38, title: "➡️ Right Turn in 100m", sub: "Right Blue Pulse", turn: "R", dist: 100, siren: 0 },
+      { lat: 12.9728, lng: 77.5946, bearing: 15, tilt: 6, speed: 32, title: "➡️ Right Turn in 50m", sub: "Right Green Pulse", turn: "R", dist: 50, siren: 0 },
+      { lat: 12.9732, lng: 77.5946, bearing: 75, tilt: 16, speed: 25, title: "➡️ Turn Right Now!", sub: "Right Orange Wave", turn: "R", dist: 0, siren: 0 },
+      { lat: 12.9732, lng: 77.5962, bearing: 90, tilt: 0, speed: 45, title: "Cruising East", sub: "Speed 45 km/h", turn: "CLEAR", dist: 0, siren: 0 },
+      { lat: 12.9730, lng: 77.5975, bearing: 95, tilt: -8, speed: 48, title: "🚨 SIREN OVERTAKE!", sub: "Yield to Ambulance", turn: "CLEAR", dist: 0, siren: 1 },
+      { lat: 12.9728, lng: 77.5990, bearing: 160, tilt: 14, speed: 20, title: "↪️ Right U-Turn Now", sub: "Modules 1 & 2 Wave", turn: "UR", dist: 0, siren: 0 },
+      { lat: 12.9715, lng: 77.5970, bearing: 220, tilt: 0, speed: 40, title: "🔄 Re-routing trajectory...", sub: "All 3 Modules Red", turn: "REROUTE", dist: 0, siren: 0 },
+      { lat: 12.9708, lng: 77.5960, bearing: 240, tilt: 0, speed: 35, title: "⬅️ Left Turn in 100m", sub: "Left Blue Pulse", turn: "L", dist: 100, siren: 0 },
+      { lat: 12.9704, lng: 77.5955, bearing: 250, tilt: -6, speed: 28, title: "⬅️ Left Turn in 50m", sub: "Left Green Pulse", turn: "L", dist: 50, siren: 0 },
+      { lat: 12.9700, lng: 77.5950, bearing: 270, tilt: -16, speed: 22, title: "⬅️ Turn Left Now!", sub: "Left Orange Wave", turn: "L", dist: 0, siren: 0 },
+      { lat: 12.9710, lng: 77.5946, bearing: 350, tilt: 0, speed: 0, title: "🏁 Arrived at Destination", sub: "Visor Remote Open", turn: "CLEAR", dist: 0, siren: 0 }
+    ];
+
+    function toggleSimulation() {
+      const btn = document.getElementById('btnSimPlay');
+      if (isSimulating) {
+        stopSimulation();
+      } else {
+        startSimulation();
+      }
+    }
+
+    function startSimulation() {
+      isSimulating = true;
+      simIndex = 0;
+      const btn = document.getElementById('btnSimPlay');
+      btn.innerText = "⏹ Stop Demo";
+      btn.classList.add('playing');
+      document.getElementById('simStatus').innerText = "3D Simulation: Running";
+
+      if (routeLine) map.removeLayer(routeLine);
+      routeLine = L.polyline(demoRoute.map(p => [p.lat, p.lng]), {
+        color: '#00e5ff',
+        weight: 6,
+        opacity: 0.95,
+        dashArray: '8, 8'
+      }).addTo(map);
+
+      runSimStep();
+      simTimer = setInterval(runSimStep, 3500);
+    }
+
+    function stopSimulation() {
+      isSimulating = false;
+      if (simTimer) clearInterval(simTimer);
+      const btn = document.getElementById('btnSimPlay');
+      btn.innerText = "▶ Start 3D Demo";
+      btn.classList.remove('playing');
+      document.getElementById('simStatus').innerText = "3D Simulation: Idle";
+      handleSirenEvent(0);
+      triggerNav('CLEAR', 0, 'GPS Navigation Ready', 'Select destination or tap test route');
+    }
+
+    function runSimStep() {
+      if (simIndex >= demoRoute.length) {
+        stopSimulation();
+        return;
+      }
+
+      const step = demoRoute[simIndex];
+      riderLat = step.lat;
+      riderLng = step.lng;
+      riderMarker.setLatLng([riderLat, riderLng]);
+      setRiderOrientation(step.bearing, step.tilt);
+      map.panTo([riderLat, riderLng]);
+      document.getElementById('speedBadge').innerText = `${step.speed} KM/H`;
+
+      triggerNav(step.turn, step.dist, step.title, step.sub);
+      handleSirenEvent(step.siren);
+
+      if (simIndex === demoRoute.length - 1) {
+        sendVisor('OPEN');
+      }
+
+      simIndex++;
+    }
+  </script>
+</body>
+</html>

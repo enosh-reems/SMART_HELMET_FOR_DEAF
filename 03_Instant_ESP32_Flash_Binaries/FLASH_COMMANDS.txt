@@ -1,0 +1,42 @@
+﻿================================================================================
+SMART HELMET ESP32-S3 FIRMWARE FLASHING REFERENCE
+================================================================================
+
+TARGET HARDWARE:
+  - Chip: ESP32-S3 (ESP32-S3-WROOM-1 / ESP32-S3-DevKitC-1)
+  - Flash Size: 16 MB
+  - Flash Mode: DIO
+  - Flash Frequency: 80 MHz
+
+--------------------------------------------------------------------------------
+OPTION 1: AUTOMATED FLASHING
+--------------------------------------------------------------------------------
+Simply double-click `FLASH_ESP32_S3.bat` in this directory, enter your COM port,
+and it will flash the entire system in about 15 seconds.
+
+--------------------------------------------------------------------------------
+OPTION 2: COMMAND LINE VIA ESPTOOL (PowerShell / CMD)
+--------------------------------------------------------------------------------
+Open terminal in this directory and execute:
+
+python -m esptool --chip esp32s3 -p COMx -b 460800 --before default_reset --after hard_reset write_flash --flash_mode dio --flash_size 16MB --flash_freq 80m 0x0 bootloader.bin 0x8000 partition-table.bin 0x10000 template-app.bin 0x510000 srmodels.bin
+
+(Replace COMx with your actual COM port, e.g., COM3)
+
+--------------------------------------------------------------------------------
+OPTION 3: ESPRESSIF FLASH DOWNLOAD TOOL (GUI)
+--------------------------------------------------------------------------------
+If using Espressif's Official Flash Download Tool GUI (https://www.espressif.com/en/support/download/other-tools):
+1. Chip Type: ESP32-S3
+2. WorkMode: Develop
+3. Set the following binary rows (check the boxes):
+   - bootloader.bin       -->  0x0
+   - partition-table.bin  -->  0x8000
+   - template-app.bin     -->  0x10000
+   - srmodels.bin         -->  0x510000
+4. SPI SPEED: 80MHz
+5. SPI MODE:  DIO
+6. FLASH SIZE: 128Mbit (16MB)
+7. Select COM port and BAUD: 460800 or 921600
+8. Click "START"
+================================================================================

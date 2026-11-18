@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Helmet - Live Telemetry & AI Presentation HUD</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes pulse-red {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.03); }
+    }
+    .siren-alert {
+      animation: pulse-red 0.8s infinite;
+    }
+    .cyber-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      backdrop-filter: blur(12px);
+    }
+    .visor-blade {
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-mono p-4 md:p-8 flex flex-col justify-between">
+
+  <!-- Header -->
+  <header class="flex flex-wrap items-center justify-between border-b border-cyan-900/50 pb-4 mb-6 gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
+      <div>
+        <h1 class="text-2xl font-bold tracking-wider text-cyan-400">SMART HELMET // LIVE TELEMETRY</h1>
+        <p class="text-xs text-slate-400">ESP32-S3 Edge AI & Dual-Core Safety Control System</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <button id="connectBtn" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg shadow-lg shadow-cyan-600/30 transition text-sm flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <span id="btnText">Connect COM Port (Direct USB)</span>
+      </button>
+      <div id="connStatus" class="px-3 py-1 bg-red-950/80 border border-red-800 text-red-400 text-xs rounded-full">
+        Disconnected
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid -->
+  <main class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow">
+
+    <!-- Card 1: Visor Actuation HUD -->
+    <div class="cyber-card rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+      <div>
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-xs font-bold text-cyan-400 tracking-widest uppercase">Dual MG90S Servos</span>
+          <span id="visorStateBadge" class="px-2.5 py-0.5 rounded text-xs font-bold bg-amber-950 text-amber-400 border border-amber-800">CLOSED (0°)</span>
+        </div>
+        <h2 class="text-lg font-semibold text-slate-200 mb-2">Visor Mechanical Status</h2>
+        
+        <!-- Visor Graphic Simulation -->
+        <div class="relative w-48 h-48 mx-auto my-4 flex items-center justify-center">
+          <!-- Helmet Base Silhouette -->
+          <svg viewBox="0 0 100 100" class="w-full h-full text-slate-800">
+            <circle cx="50" cy="50" r="44" fill="currentColor" stroke="#334155" stroke-width="3"/>
+            <path d="M 30 75 Q 50 90 70 75" fill="none" stroke="#475569" stroke-width="4"/>
+          </svg>
+          <!-- Visor Shield -->
+          <svg id="visorGraphic" viewBox="0 0 100 100" class="absolute inset-0 w-full h-full visor-blade" style="transform-origin: 50% 50%;">
+            <path d="M 22 45 Q 50 18 78 45 L 75 58 Q 50 35 25 58 Z" fill="rgba(6, 182, 212, 0.45)" stroke="#22d3ee" stroke-width="2"/>
+          </svg>
+          <div class="absolute text-center">
+            <span id="visorAngleText" class="text-3xl font-extrabold text-white">0°</span>
+            <span class="block text-[10px] text-cyan-400 tracking-wider">PWM POS</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-800 text-xs">
+        <div class="flex justify-between text-slate-400 mb-1">
+          <span>Servo 1 (GPIO 15):</span>
+          <span id="servo1Angle" class="text-cyan-300 font-bold">0°</span>
+        </div>
+        <div class="flex justify-between text-slate-400">
+          <span>Servo 2 (GPIO 16 Inverted):</span>
+          <span id="servo2Angle" class="text-cyan-300 font-bold">180°</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Voice Command Recognition HUD -->
+    <div class="cyber-card rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+      <div>
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-xs font-bold text-cyan-400 tracking-widest uppercase">ESP-SR MultiNet 7</span>
+          <span class="text-xs text-emerald-400 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Listening (16 kHz)
+          </span>
+        </div>
+        <h2 class="text-lg font-semibold text-slate-200 mb-2">Voice Recognition HUD</h2>
+
+        <!-- Recognized Command Box -->
+        <div class="my-6 p-5 rounded-xl bg-slate-900/90 border border-cyan-800/40 text-center">
+          <p class="text-xs text-slate-400 mb-1 uppercase tracking-wider">Last Recognized Speech</p>
+          <p id="lastCommandText" class="text-2xl font-bold text-cyan-300 tracking-wide">WAITING FOR COMMAND</p>
+          <div class="mt-3 flex justify-center items-center gap-4 text-xs text-slate-400">
+            <span>Prob: <strong id="cmdProbText" class="text-emerald-400">--</strong></span>
+            <span>ID: <strong id="cmdIdText" class="text-cyan-400">--</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time Mic Level Meter -->
+      <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-800">
+        <div class="flex justify-between text-xs text-slate-400 mb-1.5">
+          <span>INMP441 Microphone Level:</span>
+          <span id="micPeakVal" class="text-cyan-300 font-bold">0 / 32768</span>
+        </div>
+        <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+          <div id="micMeterBar" class="h-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-rose-500 transition-all duration-100" style="width: 5%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: AI Siren Detector HUD -->
+    <div class="cyber-card rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+      <div>
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-xs font-bold text-cyan-400 tracking-widest uppercase">ESP-DL 82K CNN (W8A8)</span>
+          <span id="sirenBadge" class="px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">ROAD CLEAR</span>
+        </div>
+        <h2 class="text-lg font-semibold text-slate-200 mb-2">Emergency Siren AI Status</h2>
+
+        <!-- Alert Display Banner -->
+        <div id="sirenAlertCard" class="my-6 p-5 rounded-xl bg-slate-900/90 border border-slate-800 text-center transition-all duration-300">
+          <div id="sirenIcon" class="text-4xl mb-2">🛡️</div>
+          <p id="sirenAlertText" class="text-xl font-bold text-slate-300 tracking-wide">NO SIREN DETECTED</p>
+          <p class="text-xs text-slate-500 mt-1">Classroom Noise Rejection: ACTIVE</p>
+        </div>
+      </div>
+
+      <!-- Siren Probability Gauge -->
+      <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-800">
+        <div class="flex justify-between text-xs text-slate-400 mb-1.5">
+          <span>AI Siren Confidence:</span>
+          <span id="sirenProbText" class="text-cyan-300 font-bold">0.00 %</span>
+        </div>
+        <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+          <div id="sirenMeterBar" class="h-full bg-gradient-to-r from-cyan-500 to-rose-600 transition-all duration-300" style="width: 0%;"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Live Serial Log Stream -->
+  <section class="cyber-card rounded-2xl p-4 mt-6 shadow-xl">
+    <div class="flex justify-between items-center mb-2">
+      <h3 class="text-xs font-bold text-cyan-400 tracking-widest uppercase flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+        Live ESP32-S3 Serial Stream (115200 Baud)
+      </h3>
+      <button id="clearLogBtn" class="text-[11px] text-slate-400 hover:text-slate-200">Clear Log</button>
+    </div>
+    <div id="consoleLog" class="h-36 overflow-y-auto bg-slate-950/90 rounded-lg p-3 text-xs text-emerald-400/90 font-mono space-y-0.5 border border-slate-900">
+      <div>[SYSTEM] Ready to connect to Smart Helmet...</div>
+    </div>
+  </section>
+
+  <script>
+    let port = null;
+    let reader = null;
+    let keepReading = false;
+
+    const connectBtn = document.getElementById('connectBtn');
+    const btnText = document.getElementById('btnText');
+    const connStatus = document.getElementById('connStatus');
+    const consoleLog = document.getElementById('consoleLog');
+    const clearLogBtn = document.getElementById('clearLogBtn');
+
+    // UI Elements
+    const visorStateBadge = document.getElementById('visorStateBadge');
+    const visorAngleText = document.getElementById('visorAngleText');
+    const visorGraphic = document.getElementById('visorGraphic');
+    const servo1Angle = document.getElementById('servo1Angle');
+    const servo2Angle = document.getElementById('servo2Angle');
+
+    const lastCommandText = document.getElementById('lastCommandText');
+    const cmdProbText = document.getElementById('cmdProbText');
+    const cmdIdText = document.getElementById('cmdIdText');
+    const micPeakVal = document.getElementById('micPeakVal');
+    const micMeterBar = document.getElementById('micMeterBar');
+
+    const sirenBadge = document.getElementById('sirenBadge');
+    const sirenAlertCard = document.getElementById('sirenAlertCard');
+    const sirenIcon = document.getElementById('sirenIcon');
+    const sirenAlertText = document.getElementById('sirenAlertText');
+    const sirenProbText = document.getElementById('sirenProbText');
+    const sirenMeterBar = document.getElementById('sirenMeterBar');
+
+    clearLogBtn.addEventListener('click', () => {
+      consoleLog.innerHTML = '<div>[SYSTEM] Log cleared.</div>';
+    });
+
+    function appendLog(line) {
+      const el = document.createElement('div');
+      el.textContent = line;
+      consoleLog.appendChild(el);
+      consoleLog.scrollTop = consoleLog.scrollHeight;
+    }
+
+    // Parse telemetry lines from ESP32-S3
+    function parseSerialLine(line) {
+      // 1. Microphone Peak
+      const micMatch = line.match(/Mic peak level:\s*(\d+)/i);
+      if (micMatch) {
+        const peak = parseInt(micMatch[1]);
+        micPeakVal.textContent = `${peak} / 32768`;
+        const pct = Math.min(100, Math.max(2, (peak / 15000) * 100));
+        micMeterBar.style.width = `${pct}%`;
+      }
+
+      // 2. Voice Command Detection
+      if (line.includes("Text:")) {
+        const textMatch = line.match(/Text:\s*(.*)/i);
+        if (textMatch) {
+          lastCommandText.textContent = textMatch[1].toUpperCase();
+          lastCommandText.classList.add("text-emerald-300");
+          setTimeout(() => lastCommandText.classList.remove("text-emerald-300"), 2000);
+        }
+      }
+      const probMatch = line.match(/Probability:\s*([0-9.]+)/i);
+      if (probMatch) cmdProbText.textContent = probMatch[1];
+
+      const idMatch = line.match(/Command ID:\s*(\d+)/i);
+      if (idMatch) cmdIdText.textContent = idMatch[1];
+
+      // 3. Servo Visor Actuation
+      if (line.includes("OPEN VISOR COMMAND") || line.includes("Servos angle command: 90")) {
+        visorStateBadge.textContent = "OPEN (90°)";
+        visorStateBadge.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800";
+        visorAngleText.textContent = "90°";
+        visorGraphic.style.transform = "rotate(-45deg) translate(-5px, -15px)";
+        servo1Angle.textContent = "90°";
+        servo2Angle.textContent = "90°";
+      } else if (line.includes("CLOSE VISOR COMMAND") || line.includes("Servos angle command: 0")) {
+        visorStateBadge.textContent = "CLOSED (0°)";
+        visorStateBadge.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-amber-950 text-amber-400 border border-amber-800";
+        visorAngleText.textContent = "0°";
+        visorGraphic.style.transform = "rotate(0deg) translate(0, 0)";
+        servo1Angle.textContent = "0°";
+        servo2Angle.textContent = "180°";
+      }
+
+      // 4. Siren AI Detection
+      const sirenProbMatch = line.match(/probability=([0-9.]+)/i);
+      if (sirenProbMatch) {
+        const p = parseFloat(sirenProbMatch[1]);
+        sirenProbText.textContent = `${(p * 100).toFixed(1)} %`;
+        sirenMeterBar.style.width = `${Math.min(100, p * 100)}%`;
+      }
+
+      if (line.includes("SIREN CONFIRMED") || line.includes("SIREN SUSTAINED") || line.includes("SIREN DETECTED")) {
+        sirenBadge.textContent = "EMERGENCY DETECTED";
+        sirenBadge.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-rose-950 text-rose-300 border border-rose-700";
+        sirenAlertCard.className = "my-6 p-5 rounded-xl bg-rose-950/90 border border-rose-600 text-center siren-alert";
+        sirenIcon.textContent = "🚨";
+        sirenAlertText.textContent = "AMBULANCE / SIREN DETECTED";
+        sirenAlertText.className = "text-xl font-extrabold text-rose-300 tracking-wide";
+      } else if (line.includes("Siren cleared") || line.includes("No siren")) {
+        sirenBadge.textContent = "ROAD CLEAR";
+        sirenBadge.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800";
+        sirenAlertCard.className = "my-6 p-5 rounded-xl bg-slate-900/90 border border-slate-800 text-center";
+        sirenIcon.textContent = "🛡️";
+        sirenAlertText.textContent = "NO SIREN DETECTED";
+        sirenAlertText.className = "text-xl font-bold text-slate-300 tracking-wide";
+      }
+    }
+
+    // Direct Web Serial API (Chrome / Edge)
+    connectBtn.addEventListener('click', async () => {
+      if (!("serial" in navigator)) {
+        alert("Web Serial is supported in Google Chrome, Microsoft Edge, and Opera. Please open this page in Chrome or Edge!");
+        return;
+      }
+
+      if (port) {
+        keepReading = false;
+        if (reader) await reader.cancel();
+        await port.close();
+        port = null;
+        btnText.textContent = "Connect COM Port (Direct USB)";
+        connStatus.textContent = "Disconnected";
+        connStatus.className = "px-3 py-1 bg-red-950/80 border border-red-800 text-red-400 text-xs rounded-full";
+        return;
+      }
+
+      try {
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 115200 });
+        btnText.textContent = "Disconnect";
+        connStatus.textContent = "Connected (Live)";
+        connStatus.className = "px-3 py-1 bg-emerald-950/80 border border-emerald-800 text-emerald-400 text-xs rounded-full";
+        appendLog("[SYSTEM] Connected to ESP32-S3 serial stream at 115200 baud.");
+
+        keepReading = true;
+        const textDecoder = new TextDecoderStream();
+        const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+        reader = textDecoder.readable.getReader();
+
+        let buffer = "";
+        while (keepReading) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          if (value) {
+            buffer += value;
+            const lines = buffer.split("\n");
+            buffer = lines.pop();
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed) {
+                appendLog(trimmed);
+                parseSerialLine(trimmed);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        appendLog(`[ERROR] ${err.message}`);
+      }
+    });
+
+    // Auto-connect to SSE stream if served via web_bridge.py
+    if (window.location.protocol.startsWith('http')) {
+      try {
+        const sse = new EventSource('/stream');
+        sse.onopen = () => {
+          connStatus.textContent = "Connected (Wireless Wi-Fi Stream)";
+          connStatus.className = "px-3 py-1 bg-emerald-950/80 border border-emerald-800 text-emerald-400 text-xs rounded-full";
+          connectBtn.style.display = "none";
+          appendLog("[SYSTEM] Connected wirelessly via Local Wi-Fi Stream.");
+        };
+        sse.onmessage = (event) => {
+          const line = event.data.trim();
+          if (line) {
+            appendLog(line);
+            parseSerialLine(line);
+          }
+        };
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Helmet Visor Calibration & Anti-Jam Controller</title>
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-card: #131b2e;
+      --bg-card-hover: #1b2640;
+      --accent-cyan: #00e5ff;
+      --accent-green: #00ff88;
+      --accent-red: #ff3366;
+      --accent-yellow: #ffd000;
+      --text-main: #e2e8f0;
+      --text-muted: #8492a6;
+      --border-color: #202d4a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--text-main);
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .title-group h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-group p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .conn-panel {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      background: #2a1520;
+      color: var(--accent-red);
+      border: 1px solid rgba(255, 51, 102, 0.3);
+    }
+
+    .status-badge.connected {
+      background: #0f2e24;
+      color: var(--accent-green);
+      border-color: rgba(0, 255, 136, 0.4);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    button {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid #334155;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    button:hover:not(:disabled) {
+      background: #334155;
+      border-color: #475569;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    button.btn-primary {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+    button.btn-primary:hover:not(:disabled) {
+      background: #0369a1;
+    }
+
+    button.btn-danger {
+      background: var(--accent-red);
+      border-color: #ff6b8b;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
+    }
+    button.btn-danger:hover:not(:disabled) {
+      background: #e6004c;
+      box-shadow: 0 0 25px rgba(255, 51, 102, 0.7);
+    }
+
+    button.btn-success {
+      background: #059669;
+      border-color: #34d399;
+    }
+    button.btn-success:hover:not(:disabled) {
+      background: #047857;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+
+    .gpio-tag {
+      font-size: 11px;
+      background: #1e293b;
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: #94a3b8;
+      border: 1px solid #334155;
+    }
+
+    .angle-display {
+      font-size: 42px;
+      font-weight: 800;
+      text-align: center;
+      margin: 10px 0;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+    }
+
+    .angle-display span {
+      font-size: 18px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .slider-container {
+      margin: 16px 0;
+    }
+
+    input[type=range] {
+      width: 100%;
+      height: 10px;
+      border-radius: 5px;
+      background: #1e293b;
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
+      cursor: pointer;
+    }
+
+    .step-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      margin: 12px 0 16px;
+    }
+
+    .step-buttons button {
+      flex: 1;
+      padding: 8px 4px;
+      font-size: 12px;
+      background: #182238;
+    }
+
+    .record-box {
+      background: #0c1322;
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 14px;
+    }
+
+    .record-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .record-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .record-val {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--accent-green);
+    }
+
+    /* Emergency Strip */
+    .emergency-bar {
+      background: linear-gradient(90deg, #3d0c1e 0%, #20132e 100%);
+      border: 2px solid var(--accent-red);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .emergency-text h3 {
+      font-size: 16px;
+      color: #ff6b8b;
+      margin-bottom: 4px;
+    }
+    .emergency-text p {
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+
+    /* Bottom Section */
+    .bottom-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .bottom-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    pre.code-preview {
+      background: #080c14;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: "Fira Code", Consolas, monospace;
+      font-size: 13px;
+      color: #38bdf8;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    .terminal-box {
+      background: #080c14;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      height: 180px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #94a3b8;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .notice {
+      background: rgba(0, 229, 255, 0.08);
+      border-left: 4px solid var(--accent-cyan);
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+
+    .notice strong {
+      color: var(--accent-cyan);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="title-group">
+      <h1>🛡️ Smart Helmet Visor Calibration & Anti-Jam Tool</h1>
+      <p>Independent Dual-Servo Angle Calibration (Motors facing outwards)</p>
+    </div>
+
+    <div class="conn-panel">
+      <div id="statusBadge" class="status-badge">
+        <span class="status-dot"></span>
+        <span id="statusText">Disconnected</span>
+      </div>
+      <button id="btnConnect" class="btn-primary">🔌 Connect ESP32 (COM6)</button>
+    </div>
+  </header>
+
+  <!-- Anti-Jam Emergency Cutoff -->
+  <div class="emergency-bar">
+    <div class="emergency-text">
+      <h3>⚠️ Anti-Jam Emergency PWM Cutoff (Relax Servos)</h3>
+      <p>If motors buzz or push against helmet plastic stops, click below. This shuts off PWM duty to 0% so servos go limp immediately.</p>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button id="btnDetach" class="btn-danger" style="padding: 12px 20px;">🛑 DETACH / PWM CUTOFF</button>
+      <button id="btnAttach" class="btn-success">⚡ Re-Attach PWM</button>
+    </div>
+  </div>
+
+  <div class="notice">
+    <strong>Calibrate Safely in 3 Easy Steps:</strong>
+    1. Click <em>Connect ESP32</em>.
+    2. Adjust <strong>Motor 1</strong> and <strong>Motor 2</strong> micro-buttons until the visor is gently closed (no mechanical strain), then click <em>"Save as CLOSED"</em>.
+    3. Adjust until the visor is comfortably open, then click <em>"Save as OPEN"</em>. Copy the generated code into <code>main.c</code>!
+  </div>
+
+  <!-- Dual Servos Grid -->
+  <div class="grid-2">
+
+    <!-- MOTOR 1: LEFT -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Motor 1 (Left Side of Helmet)</span>
+        <span class="gpio-tag">GPIO 15</span>
+      </div>
+
+      <div class="angle-display"><span id="m1Val">0</span><span>°</span></div>
+
+      <div class="slider-container">
+        <input type="range" id="m1Slider" min="0" max="180" value="0">
+      </div>
+
+      <div class="step-buttons">
+        <button onclick="stepMotor(1, -10)">-10°</button>
+        <button onclick="stepMotor(1, -5)">-5°</button>
+        <button onclick="stepMotor(1, -1)">-1°</button>
+        <button onclick="stepMotor(1, +1)">+1°</button>
+        <button onclick="stepMotor(1, +5)">+5°</button>
+        <button onclick="stepMotor(1, +10)">+10°</button>
+      </div>
+
+      <div class="record-box">
+        <div class="record-row">
+          <span>Target CLOSED Angle:</span>
+          <span class="record-val" id="m1ClosedVal">--°</span>
+          <button onclick="recordAngle(1, 'closed')">📌 Save as CLOSED</button>
+        </div>
+        <div class="record-row" style="margin-top: 10px;">
+          <span>Target OPEN Angle:</span>
+          <span class="record-val" id="m1OpenVal">--°</span>
+          <button onclick="recordAngle(1, 'open')">📌 Save as OPEN</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOTOR 2: RIGHT -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Motor 2 (Right Side of Helmet)</span>
+        <span class="gpio-tag">GPIO 16</span>
+      </div>
+
+      <div class="angle-display"><span id="m2Val">180</span><span>°</span></div>
+
+      <div class="slider-container">
+        <input type="range" id="m2Slider" min="0" max="180" value="180">
+      </div>
+
+      <div class="step-buttons">
+        <button onclick="stepMotor(2, -10)">-10°</button>
+        <button onclick="stepMotor(2, -5)">-5°</button>
+        <button onclick="stepMotor(2, -1)">-1°</button>
+        <button onclick="stepMotor(2, +1)">+1°</button>
+        <button onclick="stepMotor(2, +5)">+5°</button>
+        <button onclick="stepMotor(2, +10)">+10°</button>
+      </div>
+
+      <div class="record-box">
+        <div class="record-row">
+          <span>Target CLOSED Angle:</span>
+          <span class="record-val" id="m2ClosedVal">--°</span>
+          <button onclick="recordAngle(2, 'closed')">📌 Save as CLOSED</button>
+        </div>
+        <div class="record-row" style="margin-top: 10px;">
+          <span>Target OPEN Angle:</span>
+          <span class="record-val" id="m2OpenVal">--°</span>
+          <button onclick="recordAngle(2, 'open')">📌 Save as OPEN</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Synchronized Testing Controls -->
+  <div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+      <span class="card-title">🧪 Smooth Test Movement (Auto-Detaches PWM when stopped)</span>
+    </div>
+    <div style="display:flex; gap: 15px; flex-wrap:wrap; align-items:center;">
+      <button id="btnTestOpen" class="btn-success" style="padding:10px 18px;" onclick="testMove('OPEN')">
+        🔼 Smooth OPEN Visor
+      </button>
+      <button id="btnTestClose" class="btn-primary" style="padding:10px 18px;" onclick="testMove('CLOSE')">
+        🔽 Smooth CLOSE Visor
+      </button>
+      <button class="btn-primary" style="padding:10px 18px; background:#475569;" onclick="testSweepBoth()">
+        🔄 Sweep Full Cycle
+      </button>
+      <span style="font-size:12px; color:var(--text-muted); margin-left:auto;">
+        *Firmware automatically powers off PWM 600ms after motion so motors NEVER buzz or jam!
+      </span>
+    </div>
+  </div>
+
+  <!-- Bottom Panel: Code Generator & Serial Log -->
+  <div class="bottom-panel">
+    <!-- Code Generator -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📋 Calibrated C Constants</span>
+        <button onclick="copyCode()">Copy to Clipboard</button>
+      </div>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">
+        Once calibrated, paste these 4 values into <code>main.c</code>:
+      </p>
+      <pre class="code-preview" id="codeBlock">// Calibrate both sides first...</pre>
+    </div>
+
+    <!-- Serial Terminal -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📟 Serial Monitor Output</span>
+        <button onclick="document.getElementById('terminal').textContent=''">Clear</button>
+      </div>
+      <div class="terminal-box" id="terminal">Waiting for connection...&#10;</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let port = null;
+  let reader = null;
+  let writer = null;
+  let inputDone = null;
+  let outputDone = null;
+  let inputStream = null;
+  let outputStream = null;
+
+  let m1Angle = 0;
+  let m2Angle = 180;
+
+  let m1Closed = null;
+  let m1Open = null;
+  let m2Closed = null;
+  let m2Open = null;
+
+  const btnConnect = document.getElementById('btnConnect');
+  const statusBadge = document.getElementById('statusBadge');
+  const statusText = document.getElementById('statusText');
+  const terminal = document.getElementById('terminal');
+
+  const m1Slider = document.getElementById('m1Slider');
+  const m2Slider = document.getElementById('m2Slider');
+  const m1Val = document.getElementById('m1Val');
+  const m2Val = document.getElementById('m2Val');
+
+  // Sliders input
+  m1Slider.addEventListener('input', (e) => {
+    m1Angle = parseInt(e.target.value);
+    m1Val.textContent = m1Angle;
+    sendSerial(`S1:${m1Angle}\n`);
+  });
+
+  m2Slider.addEventListener('input', (e) => {
+    m2Angle = parseInt(e.target.value);
+    m2Val.textContent = m2Angle;
+    sendSerial(`S2:${m2Angle}\n`);
+  });
+
+  function stepMotor(motor, delta) {
+    if (motor === 1) {
+      m1Angle = Math.max(0, Math.min(180, m1Angle + delta));
+      m1Slider.value = m1Angle;
+      m1Val.textContent = m1Angle;
+      sendSerial(`S1:${m1Angle}\n`);
+    } else {
+      m2Angle = Math.max(0, Math.min(180, m2Angle + delta));
+      m2Slider.value = m2Angle;
+      m2Val.textContent = m2Angle;
+      sendSerial(`S2:${m2Angle}\n`);
+    }
+  }
+
+  function recordAngle(motor, type) {
+    if (motor === 1) {
+      if (type === 'closed') {
+        m1Closed = m1Angle;
+        document.getElementById('m1ClosedVal').textContent = `${m1Closed}°`;
+      } else {
+        m1Open = m1Angle;
+        document.getElementById('m1OpenVal').textContent = `${m1Open}°`;
+      }
+    } else {
+      if (type === 'closed') {
+        m2Closed = m2Angle;
+        document.getElementById('m2ClosedVal').textContent = `${m2Closed}°`;
+      } else {
+        m2Open = m2Angle;
+        document.getElementById('m2OpenVal').textContent = `${m2Open}°`;
+      }
+    }
+    updateCodeBlock();
+  }
+
+  function updateCodeBlock() {
+    const c1 = m1Closed !== null ? m1Closed : '/* calibrate */';
+    const o1 = m1Open !== null ? m1Open : '/* calibrate */';
+    const c2 = m2Closed !== null ? m2Closed : '/* calibrate */';
+    const o2 = m2Open !== null ? m2Open : '/* calibrate */';
+
+    const code = `/* =========================================================\n * CALIBRATED SAFE VISOR ANGLES (Both Motors Facing Outwards)\n * =========================================================\n */\n#define SERVO1_CLOSE_ANGLE  ${c1}\n#define SERVO1_OPEN_ANGLE   ${o1}\n\n#define SERVO2_CLOSE_ANGLE  ${c2}\n#define SERVO2_OPEN_ANGLE   ${o2}\n\n/* Travel sweep angles */\n// Motor 1 sweep: ${Math.abs(o1 - c1)} deg\n// Motor 2 sweep: ${Math.abs(o2 - c2)} deg`;
+
+    document.getElementById('codeBlock').textContent = code;
+  }
+
+  function copyCode() {
+    const text = document.getElementById('codeBlock').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      alert("Calibrated code copied to clipboard!");
+    });
+  }
+
+  // Emergency detach
+  document.getElementById('btnDetach').addEventListener('click', () => {
+    sendSerial(`DETACH\n`);
+    logTerminal(">>> SENT: DETACH (PWM duty cutoff, motors relaxed)\n");
+  });
+
+  document.getElementById('btnAttach').addEventListener('click', () => {
+    sendSerial(`ATTACH\n`);
+    logTerminal(">>> SENT: ATTACH (PWM re-enabled)\n");
+  });
+
+  function testMove(direction) {
+    if (direction === 'OPEN') {
+      if (m1Open === null || m2Open === null) {
+        alert("Please set both OPEN angles first!");
+        return;
+      }
+      sendSerial(`RAMP:${m1Open},${m2Open}\n`);
+      m1Slider.value = m1Open;
+      m2Slider.value = m2Open;
+      m1Val.textContent = m1Open;
+      m2Val.textContent = m2Open;
+      m1Angle = m1Open;
+      m2Angle = m2Open;
+      logTerminal(`>>> Smooth OPEN: S1->${m1Open}°, S2->${m2Open}°\n`);
+    } else {
+      if (m1Closed === null || m2Closed === null) {
+        alert("Please set both CLOSED angles first!");
+        return;
+      }
+      sendSerial(`RAMP:${m1Closed},${m2Closed}\n`);
+      m1Slider.value = m1Closed;
+      m2Slider.value = m2Closed;
+      m1Val.textContent = m1Closed;
+      m2Val.textContent = m2Closed;
+      m1Angle = m1Closed;
+      m2Angle = m2Closed;
+      logTerminal(`>>> Smooth CLOSE: S1->${m1Closed}°, S2->${m2Closed}°\n`);
+    }
+  }
+
+  async function testSweepBoth() {
+    testMove('OPEN');
+    setTimeout(() => {
+      testMove('CLOSE');
+    }, 2000);
+  }
+
+  function logTerminal(msg) {
+    terminal.textContent += msg;
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+
+  // Web Serial Implementation
+  async function connectSerial() {
+    if (!('serial' in navigator)) {
+      alert("Web Serial API is not supported in this browser. Please open in Google Chrome or Microsoft Edge.");
+      return;
+    }
+
+    try {
+      port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 115200 });
+
+      statusBadge.classList.add('connected');
+      statusText.textContent = "Connected (115200)";
+      btnConnect.textContent = "Disconnect";
+      logTerminal(">>> Connected to serial port!\n");
+
+      // Setup writer
+      const textEncoder = new TextEncoderStream();
+      outputDone = textEncoder.readable.pipeTo(port.writable);
+      outputStream = textEncoder.writable;
+      writer = outputStream.getWriter();
+
+      // Read loop
+      readLoop();
+    } catch (err) {
+      console.error(err);
+      logTerminal("Connection error: " + err + "\n");
+    }
+  }
+
+  async function disconnectSerial() {
+    if (writer) {
+      await writer.close();
+      await outputDone;
+      writer = null;
+    }
+    if (reader) {
+      await reader.cancel();
+      await inputDone;
+      reader = null;
+    }
+    if (port) {
+      await port.close();
+      port = null;
+    }
+    statusBadge.classList.remove('connected');
+    statusText.textContent = "Disconnected";
+    btnConnect.textContent = "🔌 Connect ESP32 (COM6)";
+    logTerminal(">>> Disconnected.\n");
+  }
+
+  btnConnect.addEventListener('click', () => {
+    if (port) {
+      disconnectSerial();
+    } else {
+      connectSerial();
+    }
+  });
+
+  async function sendSerial(str) {
+    if (!writer) return;
+    try {
+      await writer.write(str);
+    } catch (e) {
+      console.error("Write error:", e);
+    }
+  }
+
+  async function readLoop() {
+    while (port && port.readable) {
+      const textDecoder = new TextDecoderStream();
+      inputDone = port.readable.pipeTo(textDecoder.writable);
+      inputStream = textDecoder.readable;
+      reader = inputStream.getReader();
+
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          if (value) {
+            logTerminal(value);
+          }
+        }
+      } catch (err) {
+        console.error("Read error:", err);
+      } finally {
+        reader.releaseLock();
+      }
+    }
+  }
+
+  updateCodeBlock();
+</script>
+</body>
+</html>

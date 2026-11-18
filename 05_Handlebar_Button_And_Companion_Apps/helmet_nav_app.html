@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Smart Helmet - Turn-by-Turn Navigation for Deaf Riders</title>
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    :root {
+      --bg-dark: #0a0e17;
+      --card-bg: #131b2e;
+      --accent-cyan: #00e5ff;
+      --accent-green: #00ff88;
+      --accent-orange: #ff9900;
+      --accent-red: #ff3366;
+      --accent-blue: #0099ff;
+      --text: #e2e8f0;
+      --text-muted: #8492a6;
+      --border: #202d4a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      background: #0f1626;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      z-index: 1000;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .brand span {
+      font-size: 11px;
+      background: #1e293b;
+      padding: 2px 8px;
+      border-radius: 12px;
+      color: var(--accent-cyan);
+      border: 1px solid #334155;
+    }
+
+    .btn-ble {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-ble.connected {
+      background: #059669;
+    }
+
+    /* Live Helmet LED Module Visualizer */
+    .helmet-strip-box {
+      background: #080c14;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      z-index: 999;
+    }
+
+    .strip-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .modules-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .module-card {
+      flex: 1;
+      background: #131b2e;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .module-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+
+    .led-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .pixel-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #1a2333;
+      border: 1px solid #334155;
+      transition: all 0.15s ease;
+    }
+
+    .pixel-dot.active-blue {
+      background: var(--accent-blue);
+      box-shadow: 0 0 12px var(--accent-blue);
+    }
+    .pixel-dot.active-green {
+      background: var(--accent-green);
+      box-shadow: 0 0 12px var(--accent-green);
+    }
+    .pixel-dot.active-orange {
+      background: var(--accent-orange);
+      box-shadow: 0 0 14px var(--accent-orange);
+    }
+    .pixel-dot.active-red {
+      background: var(--accent-red);
+      box-shadow: 0 0 14px var(--accent-red);
+    }
+
+    /* Siren Emergency Banner */
+    .siren-alert-banner {
+      display: none;
+      background: linear-gradient(90deg, #ff0044, #0066ff);
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+      text-align: center;
+      padding: 10px;
+      animation: flashBanner 0.4s infinite alternate;
+      z-index: 1001;
+    }
+
+    @keyframes flashBanner {
+      0% { opacity: 0.8; }
+      100% { opacity: 1; }
+    }
+
+    /* Main Area: Map & Quick Control Tray */
+    .content-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    #map {
+      flex: 1;
+      width: 100%;
+      background: #0f1626;
+    }
+
+    /* Floating Turn Card (Google Maps style) */
+    .nav-prompt-card {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      right: 15px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 1000;
+    }
+
+    .turn-icon {
+      width: 50px;
+      height: 50px;
+      background: #0284c7;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .turn-info h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .turn-info p {
+      font-size: 13px;
+      color: var(--accent-cyan);
+      margin-top: 2px;
+    }
+
+    /* Bottom Control Dashboard Drawer */
+    .controls-panel {
+      background: #0f172a;
+      border-top: 1px solid var(--border);
+      padding: 14px;
+      z-index: 1000;
+      max-height: 45vh;
+      overflow-y: auto;
+    }
+
+    .panel-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    button.test-btn {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid #334155;
+      padding: 10px 6px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    button.test-btn:active {
+      background: #334155;
+      transform: scale(0.97);
+    }
+
+    button.test-btn span.sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .visor-toolbar {
+      display: flex;
+      gap: 10px;
+    }
+
+    .visor-toolbar button {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn-open { background: #059669; color: #fff; }
+    .btn-close { background: #d97706; color: #fff; }
+    .btn-toggle { background: #6366f1; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <!-- Top App Header -->
+  <header>
+    <div class="brand">
+      <h1>🛡️ Smart Helmet Nav</h1>
+      <span>Deaf Assist</span>
+    </div>
+    <button id="bleBtn" class="btn-ble" onclick="toggleBLE()">
+      ⚡ Connect BLE
+    </button>
+  </header>
+
+  <!-- Emergency Siren Visual Overlay -->
+  <div id="sirenBanner" class="siren-alert-banner">
+    🚨 EMERGENCY SIREN DETECTED! PULL OVER OR CHECK MIRRORS 🚨
+  </div>
+
+  <!-- Hardware LED Simulation Ribbon -->
+  <div class="helmet-strip-box">
+    <div class="strip-header">
+      <span>Helmet Visor LEDs (Serial WS2811 Light Modules)</span>
+      <span id="navStateLabel">Status: IDLE</span>
+    </div>
+    <div class="modules-container">
+      <!-- Module 3: Left -->
+      <div class="module-card">
+        <div class="module-title">3rd: Left Module</div>
+        <div class="led-row">
+          <div class="pixel-dot" id="led6"></div>
+          <div class="pixel-dot" id="led7"></div>
+          <div class="pixel-dot" id="led8"></div>
+        </div>
+      </div>
+      <!-- Module 2: Middle (Center) -->
+      <div class="module-card">
+        <div class="module-title">2nd: Middle (Siren)</div>
+        <div class="led-row">
+          <div class="pixel-dot" id="led3"></div>
+          <div class="pixel-dot" id="led4"></div>
+          <div class="pixel-dot" id="led5"></div>
+        </div>
+      </div>
+      <!-- Module 1: Right -->
+      <div class="module-card">
+        <div class="module-title">1st: Right Module</div>
+        <div class="led-row">
+          <div class="pixel-dot" id="led0"></div>
+          <div class="pixel-dot" id="led1"></div>
+          <div class="pixel-dot" id="led2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Area: Map and Active Prompt -->
+  <div class="content-area">
+    <!-- Active Turn Prompt Banner -->
+    <div class="nav-prompt-card" id="promptCard">
+      <div class="turn-icon" id="turnIcon">⬆️</div>
+      <div class="turn-info">
+        <h2 id="turnText">Straight Route</h2>
+        <p id="distText">Ready for Navigation</p>
+      </div>
+    </div>
+
+    <!-- Interactive Leaflet Map -->
+    <div id="map"></div>
+  </div>
+
+  <!-- Bottom Interactive Testing Tray -->
+  <div class="controls-panel">
+    <div class="panel-section-title">Turn-by-Turn Lighting Triggers</div>
+    <div class="btn-grid">
+      <!-- Right Turn -->
+      <button class="test-btn" onclick="sendNav('R', 100, '➡️ Right Turn in 100m', '1st Module Blue Blink')">
+        ➡️ Right 100m
+        <span class="sub">1st Module Blue</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('R', 50, '➡️ Right Turn in 50m', '1st Module Green Blink')">
+        ➡️ Right 50m
+        <span class="sub">1st Module Green</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('R', 0, '➡️ Turn Right Now!', 'Right Orange Wave')">
+        ➡️ Right Turn Now
+        <span class="sub">Orange Wave</span>
+      </button>
+
+      <!-- Left Turn -->
+      <button class="test-btn" onclick="sendNav('L', 100, '⬅️ Left Turn in 100m', '3rd Module Blue Blink')">
+        ⬅️ Left 100m
+        <span class="sub">3rd Module Blue</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('L', 50, '⬅️ Left Turn in 50m', '3rd Module Green Blink')">
+        ⬅️ Left 50m
+        <span class="sub">3rd Module Green</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('L', 0, '⬅️ Turn Left Now!', 'Left Orange Wave')">
+        ⬅️ Left Turn Now
+        <span class="sub">Orange Wave</span>
+      </button>
+
+      <!-- Left U-Turn -->
+      <button class="test-btn" onclick="sendNav('UL', 100, '↩️ Left U-Turn in 100m', '2nd & 3rd Blue')">
+        ↩️ Left U-Turn 100m
+        <span class="sub">2nd & 3rd Blue</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('UL', 50, '↩️ Left U-Turn in 50m', '2nd & 3rd Green')">
+        ↩️ Left U-Turn 50m
+        <span class="sub">2nd & 3rd Green</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('UL', 0, '↩️ Make Left U-Turn', 'Left Orange Wave')">
+        ↩️ Left U-Turn Now
+        <span class="sub">Orange Wave 2 & 3</span>
+      </button>
+
+      <!-- Right U-Turn -->
+      <button class="test-btn" onclick="sendNav('UR', 100, '↪️ Right U-Turn in 100m', '1st & 2nd Blue')">
+        ↪️ Right U-Turn 100m
+        <span class="sub">1st & 2nd Blue</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('UR', 50, '↪️ Right U-Turn in 50m', '1st & 2nd Green')">
+        ↪️ Right U-Turn 50m
+        <span class="sub">1st & 2nd Green</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('UR', 0, '↪️ Make Right U-Turn', 'Right Orange Wave')">
+        ↪️ Right U-Turn Now
+        <span class="sub">Orange Wave 1 & 2</span>
+      </button>
+
+      <!-- Slight Right -->
+      <button class="test-btn" onclick="sendNav('SR', 100, '↗️ Slight Right in 100m', '2nd Module Blue')">
+        ↗️ Slight Right 100m
+        <span class="sub">2nd Module Blue</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('SR', 50, '↗️ Slight Right in 50m', '2nd Module Green')">
+        ↗️ Slight Right 50m
+        <span class="sub">2nd Module Green</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('SR', 0, '↗️ Bear Slight Right', 'Orange Wave 2nd')">
+        ↗️ Slight Right Now
+        <span class="sub">Orange Wave 2nd</span>
+      </button>
+
+      <!-- Slight Left -->
+      <button class="test-btn" onclick="sendNav('SL', 100, '↖️ Slight Left in 100m', '2nd Module Blue')">
+        ↖️ Slight Left 100m
+        <span class="sub">2nd Module Blue</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('SL', 50, '↖️ Slight Left in 50m', '2nd Module Green')">
+        ↖️ Slight Left 50m
+        <span class="sub">2nd Module Green</span>
+      </button>
+      <button class="test-btn" onclick="sendNav('SL', 0, '↖️ Bear Slight Left', 'Orange Wave 2nd')">
+        ↖️ Slight Left Now
+        <span class="sub">Orange Wave 2nd</span>
+      </button>
+
+      <!-- System Actions -->
+      <button class="test-btn" style="border-color:#ff3366;" onclick="sendNav('REROUTE', 0, '🔄 Re-routing Route...', 'All 3 Modules Red Blink')">
+        🔄 Re-Routing
+        <span class="sub" style="color:#ff6b8b;">All Blink Red</span>
+      </button>
+      <button class="test-btn" style="border-color:#00ff88;" onclick="sendNav('CLEAR', 0, 'Straight Route', 'Normal Running')">
+        ✅ Clear / Idle
+        <span class="sub">All Off</span>
+      </button>
+      <button class="test-btn" style="border-color:#ffd000;" onclick="toggleSimulatedSiren()">
+        🚨 Test Siren Alert
+        <span class="sub">Red-Blue Strobe</span>
+      </button>
+    </div>
+
+    <!-- Visor Controls Toolbar -->
+    <div class="panel-section-title">Wireless Visor Controls</div>
+    <div class="visor-toolbar">
+      <button class="btn-open" onclick="sendVisor('OPEN')">🔼 Open Visor</button>
+      <button class="btn-close" onclick="sendVisor('CLOSE')">🔽 Close Visor</button>
+      <button class="btn-toggle" onclick="sendVisor('TOGGLE')">🔄 Toggle Visor (Button)</button>
+    </div>
+  </div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Leaflet map setup centered at rider location (defaults to Cochin, Kerala)
+    const map = L.map('map').setView([9.9816, 76.2999], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    let riderMarker = L.marker([9.9816, 76.2999]).addTo(map).bindPopup("Rider Position");
+
+    // BLE Variables
+    const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+    const NAV_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+    const VISOR_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
+    const SIREN_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26aa';
+
+    let bleDevice = null;
+    let bleServer = null;
+    let navChar = null;
+    let visorChar = null;
+    let sirenChar = null;
+
+    let simActiveState = 'IDLE';
+    let simDist = 0;
+    let simSirenAlert = false;
+    let simTick = 0;
+
+    async function toggleBLE() {
+      if (bleDevice && bleDevice.gatt.connected) {
+        bleDevice.gatt.disconnect();
+        return;
+      }
+
+      if (!navigator.bluetooth) {
+        alert("Web Bluetooth is not supported in this browser. Please use Google Chrome on Android or Bluefy on iOS.");
+        return;
+      }
+
+      try {
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ name: 'SmartHelmet' }],
+          optionalServices: [SERVICE_UUID]
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+        bleServer = await bleDevice.gatt.connect();
+        const service = await bleServer.getPrimaryService(SERVICE_UUID);
+
+        navChar = await service.getCharacteristic(NAV_CHAR_UUID);
+        visorChar = await service.getCharacteristic(VISOR_CHAR_UUID);
+        sirenChar = await service.getCharacteristic(SIREN_CHAR_UUID);
+
+        await sirenChar.startNotifications();
+        sirenChar.addEventListener('characteristicvaluechanged', (e) => {
+          const val = e.target.value.getUint8(0);
+          setSirenAlert(val === 1);
+        });
+
+        document.getElementById('bleBtn').textContent = "✓ Connected";
+        document.getElementById('bleBtn').classList.add('connected');
+      } catch (err) {
+        console.error("BLE connection error:", err);
+      }
+    }
+
+    function onDisconnected() {
+      document.getElementById('bleBtn').textContent = "⚡ Connect BLE";
+      document.getElementById('bleBtn').classList.remove('connected');
+      navChar = null;
+      visorChar = null;
+      sirenChar = null;
+    }
+
+    async function sendNav(turn, dist, title, sub) {
+      document.getElementById('turnText').textContent = title;
+      document.getElementById('distText').textContent = sub;
+      document.getElementById('navStateLabel').textContent = `Status: ${turn} (${dist}m)`;
+
+      // Set turn icon
+      const icons = {
+        'R': '➡️', 'L': '⬅️', 'UR': '↪️', 'UL': '↩️',
+        'SR': '↗️', 'SL': '↖️', 'REROUTE': '🔄', 'CLEAR': '⬆️'
+      };
+      document.getElementById('turnIcon').textContent = icons[turn] || '⬆️';
+
+      simActiveState = turn;
+      simDist = dist;
+
+      if (navChar) {
+        const encoder = new TextEncoder();
+        try {
+          await navChar.writeValueWithoutResponse(encoder.encode(`${turn},${dist}`));
+        } catch (e) {
+          console.error("BLE Write error:", e);
+        }
+      }
+    }
+
+    async function sendVisor(cmd) {
+      if (visorChar) {
+        const encoder = new TextEncoder();
+        try {
+          await visorChar.writeValueWithoutResponse(encoder.encode(cmd));
+        } catch (e) {
+          console.error("BLE Visor write error:", e);
+        }
+      } else {
+        alert(`Sent ${cmd} (Connect BLE to send to helmet)`);
+      }
+    }
+
+    function setSirenAlert(active) {
+      simSirenAlert = active;
+      document.getElementById('sirenBanner').style.display = active ? 'block' : 'none';
+    }
+
+    function toggleSimulatedSiren() {
+      setSirenAlert(!simSirenAlert);
+    }
+
+    // Local Real-time LED Simulator Loop (reflects helmet animation on phone screen)
+    setInterval(() => {
+      simTick++;
+
+      // Reset all LEDs
+      for (let i = 0; i < 9; i++) {
+        const el = document.getElementById(`led${i}`);
+        el.className = 'pixel-dot';
+      }
+
+      // Priority: Siren Alert on Middle Module (3, 4, 5)
+      if (simSirenAlert) {
+        const col = ((simTick / 3) % 2 === 0) ? 'active-red' : 'active-blue';
+        [3, 4, 5].forEach(i => document.getElementById(`led${i}`).classList.add(col));
+      }
+
+      // Navigation Animations
+      if (simActiveState === 'R') {
+        if (simDist > 70) {
+          if ((simTick / 8) % 2 === 0) [0, 1, 2].forEach(i => document.getElementById(`led${i}`).classList.add('active-blue'));
+        } else if (simDist > 20) {
+          if ((simTick / 4) % 2 === 0) [0, 1, 2].forEach(i => document.getElementById(`led${i}`).classList.add('active-green'));
+        } else {
+          let step = Math.floor(simTick / 2) % 3;
+          document.getElementById(`led${step}`).classList.add('active-orange');
+        }
+      } else if (simActiveState === 'L') {
+        if (simDist > 70) {
+          if ((simTick / 8) % 2 === 0) [6, 7, 8].forEach(i => document.getElementById(`led${i}`).classList.add('active-blue'));
+        } else if (simDist > 20) {
+          if ((simTick / 4) % 2 === 0) [6, 7, 8].forEach(i => document.getElementById(`led${i}`).classList.add('active-green'));
+        } else {
+          let step = Math.floor(simTick / 2) % 3;
+          document.getElementById(`led${8 - step}`).classList.add('active-orange');
+        }
+      } else if (simActiveState === 'UL') {
+        if (simDist > 70) {
+          if ((simTick / 8) % 2 === 0) {
+            if (!simSirenAlert) [3, 4, 5].forEach(i => document.getElementById(`led${i}`).classList.add('active-blue'));
+            [6, 7, 8].forEach(i => document.getElementById(`led${i}`).classList.add('active-blue'));
+          }
+        } else if (simDist > 20) {
+          if ((simTick / 4) % 2 === 0) {
+            if (!simSirenAlert) [3, 4, 5].forEach(i => document.getElementById(`led${i}`).classList.add('active-green'));
+            [6, 7, 8].forEach(i => document.getElementById(`led${i}`).classList.add('active-green'));
+          }
+        } else {
+          let step = Math.floor(simTick / 2) % 6;
+          let led = 8 - step;
+          if (!simSirenAlert || led >= 6) document.getElementById(`led${led}`).classList.add('active-orange');
+        }
+      } else if (simActiveState === 'UR') {
+        if (simDist > 70) {
+          if ((simTick / 8) % 2 === 0) {
+            [0, 1, 2].forEach(i => document.getElementById(`led${i}`).classList.add('active-blue'));
+            if (!simSirenAlert) [3, 4, 5].forEach(i => document.getElementById(`led${i}`).classList.add('active-blue'));
+          }
+        } else if (simDist > 20) {
+          if ((simTick / 4) % 2 === 0) {
+            [0, 1, 2].forEach(i => document.getElementById(`led${i}`).classList.add('active-green'));
+            if (!simSirenAlert) [3, 4, 5].forEach(i => document.getElementById(`led${i}`).classList.add('active-green'));
+          }
+        } else {
+          let order = [3, 4, 5, 0, 1, 2];
+          let step = Math.floor(simTick / 2) % 6;
+          let led = order[step];
+          if (!simSirenAlert || led < 3) document.getElementById(`led${led}`).classList.add('active-orange');
+        }
+      } else if (simActiveState === 'SR') {
+        if (!simSirenAlert) {
+          if (simDist > 70) {
+            if ((simTick / 8) % 2 === 0) [3, 4, 5].forEach(i => document.getElementById(`led${i}`).classList.add('active-blue'));
+          } else if (simDist > 20) {
+            if ((simTick / 4) % 2 === 0) [3, 4, 5].forEach(i => document.getElementById(`led${i}`).classList.add('active-green'));
+          } else {
+            let step = Math.floor(simTick / 2) % 3;
+            document.getElementById(`led${3 + step}`).classList.add('active-orange');
+          }
+        }
+      } else if (simActiveState === 'SL') {
+        if (!simSirenAlert) {
+          if (simDist > 70) {
+            if ((simTick / 8) % 2 === 0) [3, 4, 5].forEach(i => document.getElementById(`led${i}`).classList.add('active-blue'));
+          } else if (simDist > 20) {
+            if ((simTick / 4) % 2 === 0) [3, 4, 5].forEach(i => document.getElementById(`led${i}`).classList.add('active-green'));
+          } else {
+            let step = Math.floor(simTick / 2) % 3;
+            document.getElementById(`led${5 - step}`).classList.add('active-orange');
+          }
+        }
+      } else if (simActiveState === 'REROUTE') {
+        if ((simTick / 6) % 2 === 0) {
+          [0, 1, 2, 6, 7, 8].forEach(i => document.getElementById(`led${i}`).classList.add('active-red'));
+          if (!simSirenAlert) [3, 4, 5].forEach(i => document.getElementById(`led${i}`).classList.add('active-red'));
+        }
+      }
+    }, 40);
+  </script>
+</body>
+</html>

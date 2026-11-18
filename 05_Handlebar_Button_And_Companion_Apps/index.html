@@ -1,0 +1,2341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Smart Helmet HUD - Subconscious Optical Navigation & AI Siren Radar</title>
+  <!-- PWA & Theme -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#06b6d4">
+  <meta name="description" content="Smart Helmet for Deaf and Hard-of-Hearing Riders: Voice Navigation transformed into Subconscious Optical Pixel HUD with AI Siren Radar.">
+
+  <!-- Leaflet CSS & JS for Real-time Google Satellite Engine -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Google Fonts & Font Awesome 6 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg-dark: #070a13;
+      --panel-bg: rgba(13, 19, 34, 0.92);
+      --card-bg: rgba(19, 28, 50, 0.75);
+      --card-border: rgba(56, 189, 248, 0.22);
+      --accent-cyan: #06b6d4;
+      --accent-blue: #38bdf8;
+      --accent-green: #10b981;
+      --accent-orange: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --glow-cyan: 0 0 20px rgba(6, 182, 212, 0.6);
+      --glow-blue: 0 0 20px rgba(56, 189, 248, 0.6);
+      --glow-green: 0 0 20px rgba(16, 185, 129, 0.6);
+      --glow-orange: 0 0 22px rgba(245, 158, 11, 0.7);
+      --glow-red: 0 0 24px rgba(239, 68, 68, 0.85);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Rajdhani', -apple-system, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* =========================================
+       1. TOP HEADER & PRESENTATION RIBBON
+       ========================================= */
+    header {
+      background: linear-gradient(90deg, #070a13 0%, #0f172a 40%, #0b1329 100%);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 8px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 60px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 25px rgba(0,0,0,0.6);
+      z-index: 1000;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .brand-logo-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(59, 130, 246, 0.15));
+      border: 1px solid var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--accent-cyan);
+      box-shadow: 0 0 14px rgba(6, 182, 212, 0.4);
+    }
+
+    .brand-text-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-weight: 700;
+      font-size: 19px;
+      letter-spacing: 1px;
+      background: linear-gradient(90deg, #38bdf8 0%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .presentation-badge {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      color: #34d399;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #64748b;
+      box-shadow: 0 0 5px rgba(100, 116, 139, 0.5);
+    }
+
+    .status-dot.connected {
+      background: #10b981;
+      box-shadow: 0 0 12px #10b981;
+      animation: pulseDot 2s infinite;
+    }
+
+    .status-dot.simulating {
+      background: #38bdf8;
+      box-shadow: 0 0 10px #38bdf8;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.85); }
+    }
+
+    .btn {
+      background: rgba(30, 41, 59, 0.85);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn:hover {
+      background: rgba(51, 65, 85, 0.95);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-ble {
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      border: 1px solid #60a5fa;
+      color: white;
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-ble:hover {
+      box-shadow: 0 0 16px rgba(37, 99, 235, 0.7);
+    }
+
+    .btn-serial {
+      background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+      border: 1px solid #a5b4fc;
+      color: white;
+    }
+
+    .btn-sound {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .btn-siren-off {
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      border: 1px solid #f87171;
+      color: white;
+      box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+    }
+
+    .btn-siren-off:hover {
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.8);
+    }
+
+    /* =========================================
+       2. MAIN SPLIT CONTAINER LAYOUT
+       ========================================= */
+    .split-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+
+    /* LEFT PANE: OPTICAL HUD DIGITAL TWIN & AI RADAR */
+    .left-pane {
+      width: 46%;
+      min-width: 440px;
+      max-width: 600px;
+      background: radial-gradient(circle at 20% 20%, #111a2e 0%, #080c16 85%);
+      border-right: 1px solid rgba(56, 189, 248, 0.22);
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      gap: 12px;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
+    .left-pane::-webkit-scrollbar {
+      width: 6px;
+    }
+    .left-pane::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.3);
+      border-radius: 4px;
+    }
+
+    /* RIGHT PANE: SATELLITE MAP & 3D DIGITAL ROAD */
+    .right-pane {
+      flex: 1;
+      background: #090d16;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* =========================================
+       3. REUSABLE CARD COMPONENTS
+       ========================================= */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+      position: relative;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      padding-bottom: 6px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    /* =========================================
+       4. 9-PIXEL WS2811 LED HUD DIGITAL TWIN
+       ========================================= */
+    .hud-hero-card {
+      background: linear-gradient(180deg, rgba(17, 26, 46, 0.95) 0%, rgba(10, 15, 27, 0.98) 100%);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.15);
+    }
+
+    .modules-cluster {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+      padding: 12px;
+      background: rgba(3, 7, 18, 0.75);
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .module-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 6px;
+      border-radius: 8px;
+      background: rgba(30, 41, 59, 0.35);
+      border: 1px solid rgba(255,255,255,0.06);
+      transition: all 0.2s;
+    }
+
+    .module-box.active-mod {
+      border-color: rgba(56, 189, 248, 0.6);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.25);
+    }
+
+    .module-tag {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .led-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .pixel-led {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 2px solid #334155;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.7);
+      transition: background 0.12s, box-shadow 0.12s, border-color 0.12s;
+      position: relative;
+    }
+
+    .pixel-led::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 4px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.75);
+      opacity: 0.4;
+    }
+
+    /* Pixel LED Lighting States */
+    .led-off {
+      background: #161f30 !important;
+      border-color: #27354f !important;
+      box-shadow: none !important;
+    }
+
+    .led-standby {
+      background: #083344 !important;
+      border-color: #06b6d4 !important;
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.6), inset 0 0 4px #a5f3fc !important;
+    }
+
+    .led-blue {
+      background: #2563eb !important;
+      border-color: #60a5fa !important;
+      box-shadow: 0 0 20px #3b82f6, inset 0 0 6px #ffffff !important;
+    }
+
+    .led-green {
+      background: #059669 !important;
+      border-color: #34d399 !important;
+      box-shadow: 0 0 20px #10b981, inset 0 0 6px #ffffff !important;
+    }
+
+    .led-orange {
+      background: #d97706 !important;
+      border-color: #fbbf24 !important;
+      box-shadow: 0 0 22px #f59e0b, inset 0 0 8px #ffffff !important;
+    }
+
+    .led-red {
+      background: #dc2626 !important;
+      border-color: #f87171 !important;
+      box-shadow: 0 0 24px #ef4444, inset 0 0 8px #ffffff !important;
+    }
+
+    .led-strobe-blue {
+      background: #1d4ed8 !important;
+      border-color: #93c5fd !important;
+      box-shadow: 0 0 25px #3b82f6, inset 0 0 8px #ffffff !important;
+    }
+
+    /* Subconscious Perception Chips */
+    .perception-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .perception-chip {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .perception-chip-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .perception-chip-desc {
+      font-size: 10px;
+      color: var(--text-dim);
+      line-height: 1.3;
+    }
+
+    /* =========================================
+       5. AI ACOUSTIC SIREN LOCALIZATION RADAR
+       ========================================= */
+    .siren-radar-card {
+      background: linear-gradient(180deg, rgba(23, 17, 34, 0.95) 0%, rgba(13, 10, 24, 0.95) 100%);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .radar-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .mic-channel-box {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mic-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+
+    .vu-bar-outer {
+      width: 100%;
+      height: 7px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .vu-bar-fill {
+      height: 100%;
+      width: 18%;
+      background: linear-gradient(90deg, #10b981 0%, #f59e0b 70%, #ef4444 100%);
+      transition: width 0.1s ease;
+    }
+
+    .siren-alert-banner {
+      display: none;
+      background: linear-gradient(90deg, rgba(220, 38, 38, 0.95), rgba(185, 28, 28, 0.95));
+      border: 1px solid #f87171;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: white;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
+      animation: alertPulse 1.2s infinite;
+    }
+
+    .siren-alert-banner.active {
+      display: block;
+    }
+
+    @keyframes alertPulse {
+      0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+      50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.9); }
+    }
+
+    /* =========================================
+       6. 1-CLICK INTERACTIVE PRESENTATION DECK
+       ========================================= */
+    .triggers-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      max-height: 195px;
+      overflow-y: auto;
+      padding-right: 4px;
+      scroll-behavior: smooth;
+    }
+
+    .triggers-grid::-webkit-scrollbar {
+      width: 5px;
+    }
+    .triggers-grid::-webkit-scrollbar-thumb {
+      background: var(--accent-cyan);
+      border-radius: 4px;
+    }
+
+    .btn-trig {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+      padding: 10px 6px;
+      min-height: 48px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 3px;
+      cursor: pointer;
+      transition: all 0.15s ease-out;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .btn-trig:hover, .btn-trig:active {
+      color: #fff;
+      border-color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.22);
+      transform: scale(0.97);
+      box-shadow: 0 0 14px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn-trig.trig-siren {
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    .btn-trig.trig-siren:hover {
+      background: rgba(239, 68, 68, 0.4);
+      border-color: #ef4444;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.7);
+    }
+
+    .btn-trig.trig-off {
+      color: #cbd5e1;
+      background: rgba(51, 65, 85, 0.4);
+      border-color: rgba(148, 163, 184, 0.3);
+    }
+
+    /* =========================================
+       7. HARDWARE TELEMETRY LOG
+       ========================================= */
+    .telemetry-card {
+      flex: 1;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .terminal-body {
+      flex: 1;
+      background: #040711;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      overflow-y: auto;
+      max-height: 140px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .log-line {
+      display: flex;
+      gap: 8px;
+      line-height: 1.4;
+    }
+
+    .log-time { color: #64748b; flex-shrink: 0; }
+    .log-tag { font-weight: 700; flex-shrink: 0; padding: 0 4px; border-radius: 3px; font-size: 10px; }
+    .log-tag.system { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+    .log-tag.ble { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .log-tag.ai { background: rgba(139, 92, 246, 0.2); color: #c084fc; }
+    .log-tag.nav { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .log-tag.siren { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .log-msg { color: #e2e8f0; word-break: break-all; }
+
+    /* =========================================
+       8. MAP OVERLAYS & 3D VEHICLES
+       ========================================= */
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #090d16;
+    }
+
+    /* 3D MAP PERSPECTIVE MODE */
+    .right-pane.perspective-3d #map {
+      transform: perspective(900px) rotateX(46deg) scale(1.15);
+      transform-origin: center 75%;
+      transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .map-top-bar {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      background: rgba(11, 15, 25, 0.94);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 12px;
+      padding: 10px 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 500;
+    }
+
+    .maneuver-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.15));
+      border: 1px solid var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--accent-cyan);
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+    }
+
+    .maneuver-details {
+      flex: 1;
+      margin-left: 14px;
+    }
+
+    .maneuver-dist {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .maneuver-text {
+      font-size: 13px;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+
+    .hud-speed-badge {
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .hud-speed-unit {
+      font-size: 10px;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+    }
+
+    /* 3D MOTORCYCLE AVATAR */
+    .rider-3d-container {
+      width: 52px;
+      height: 60px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center 65%;
+      transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.8));
+    }
+
+    .bike-headlight-cone {
+      position: absolute;
+      top: -55px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90px;
+      height: 60px;
+      background: radial-gradient(ellipse at 50% 100%, rgba(254, 240, 138, 0.55) 0%, rgba(254, 240, 138, 0.2) 50%, rgba(254, 240, 138, 0) 100%);
+      clip-path: polygon(42% 100%, 58% 100%, 100% 0%, 0% 0%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .bike-chassis-3d {
+      width: 22px;
+      height: 48px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .bike-wheel-front {
+      width: 6px;
+      height: 14px;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 3px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.9);
+    }
+
+    .bike-bodywork {
+      width: 18px;
+      height: 24px;
+      background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+      border: 1px solid #38bdf8;
+      border-radius: 9px 9px 4px 4px;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 4px 8px rgba(0,0,0,0.6);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rider-helmet-top {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #f8fafc 0%, #cbd5e1 60%, #475569 100%);
+      border: 1px solid #64748b;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+      position: relative;
+    }
+
+    .rider-helmet-top::after {
+      content: '';
+      position: absolute;
+      top: 1px;
+      left: 2px;
+      right: 2px;
+      height: 4px;
+      border-radius: 2px;
+      background: #0284c7;
+    }
+
+    .bike-wheel-rear {
+      width: 7px;
+      height: 13px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 3px;
+    }
+
+    /* 3D EMERGENCY AMBULANCE WITH SOUND WAVES */
+    .ambu-3d-container {
+      width: 58px;
+      height: 84px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ambu-sound-wave {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 2px solid rgba(239, 68, 68, 0.7);
+      animation: expandAcousticWave 1.4s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+      pointer-events: none;
+    }
+    .ambu-sound-wave.wave-2 {
+      animation-delay: 0.7s;
+    }
+
+    @keyframes expandAcousticWave {
+      0% { transform: scale(0.4); opacity: 1; border-color: rgba(239, 68, 68, 0.9); }
+      100% { transform: scale(2.2); opacity: 0; border-color: rgba(59, 130, 246, 0.2); }
+    }
+
+    .ambu-van-body {
+      width: 32px;
+      height: 64px;
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px 8px 5px 5px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.8), inset 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .ambu-roof-lightbar {
+      position: absolute;
+      top: 14px;
+      width: 22px;
+      height: 6px;
+      display: flex;
+      border-radius: 3px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+    }
+    .strobe-red { flex: 1; background: #ef4444; animation: strobeFlashRed 0.3s infinite alternate; }
+    .strobe-white { width: 4px; background: #ffffff; }
+    .strobe-blue { flex: 1; background: #3b82f6; animation: strobeFlashBlue 0.3s infinite alternate; }
+
+    @keyframes strobeFlashRed { 0% { opacity: 0.2; } 100% { opacity: 1; filter: drop-shadow(0 0 8px #ef4444); } }
+    @keyframes strobeFlashBlue { 0% { opacity: 1; filter: drop-shadow(0 0 8px #3b82f6); } 100% { opacity: 0.2; } }
+
+    .ambu-cross {
+      margin-top: 26px;
+      color: #ef4444;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .ambu-stripes {
+      position: absolute;
+      bottom: 4px;
+      width: 100%;
+      height: 5px;
+      background: repeating-linear-gradient(45deg, #ef4444, #ef4444 4px, #facc15 4px, #facc15 8px);
+    }
+
+    /* DEMO CONTROLS BAR (BOTTOM OF MAP) */
+    .map-bottom-bar {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      right: 14px;
+      background: rgba(11, 15, 25, 0.94);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 12px;
+      padding: 10px 14px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 500;
+    }
+
+    .demo-timeline-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .demo-stage-badge {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: #f59e0b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .demo-controls-btns {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-play {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: 1px solid #34d399;
+      color: white;
+      padding: 6px 16px;
+      font-size: 13px;
+    }
+
+    .btn-play.playing {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      border-color: #fbbf24;
+    }
+
+    /* SCENARIO QUICK JUMP TABS */
+    .scenarios-scroll {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 6px;
+      max-height: 110px;
+      overflow-y: auto;
+      padding-right: 4px;
+      scroll-behavior: smooth;
+    }
+
+    .scenarios-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .scenarios-scroll::-webkit-scrollbar-thumb {
+      background: var(--accent-cyan);
+      border-radius: 4px;
+    }
+
+    .scenario-pill {
+      background: rgba(30, 41, 59, 0.75);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 7px 10px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .scenario-pill:hover, .scenario-pill.active {
+      background: rgba(6, 182, 212, 0.25);
+      border-color: var(--accent-cyan);
+      color: #38bdf8;
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .scenario-pill.siren-pill {
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    .scenario-pill.siren-pill:hover, .scenario-pill.siren-pill.active {
+      background: rgba(239, 68, 68, 0.35);
+      border-color: #ef4444;
+      color: #fff;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.6);
+    }
+
+    /* RESPONSIVE MOBILE ADJUSTMENTS */
+    @media (max-width: 900px) {
+      .split-container {
+        flex-direction: column;
+        height: auto;
+        overflow-y: auto;
+      }
+      .left-pane {
+        width: 100%;
+        max-width: 100%;
+        min-width: unset;
+        height: auto;
+      }
+      .right-pane {
+        height: 480px;
+        flex: unset;
+      }
+      header {
+        height: auto;
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP HEADER & BRANDING -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-logo-icon">
+        <i class="fa-solid fa-helmet-safety"></i>
+      </div>
+      <div class="brand-text-col">
+        <div class="brand-title">
+          SMART HELMET HUD
+          <span class="presentation-badge"><i class="fa-solid fa-award"></i> FINAL PRESENTATION</span>
+        </div>
+        <div class="brand-subtitle">Subconscious Optical Pixel Navigation & AI Siren Radar for Deaf Riders</div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Status Badge -->
+      <div class="status-pill">
+        <div id="statusDot" class="status-dot simulating"></div>
+        <span id="statusText">VIRTUAL SIMULATOR</span>
+      </div>
+
+      <!-- Wireless Hardware Connect Buttons -->
+      <button id="btnConnectBLE" class="btn btn-ble" title="Pair directly with ESP32-S3 over Web Bluetooth">
+        <i class="fa-brands fa-bluetooth-b"></i> Connect BLE
+      </button>
+
+      <button id="btnConnectSerial" class="btn btn-serial" title="Connect to ESP32-S3 over Web Serial (USB / COM)">
+        <i class="fa-solid fa-plug"></i> Web Serial
+      </button>
+
+      <!-- 3D Perspective Mode -->
+      <button id="btnToggle3D" class="btn" onclick="toggle3DView()" title="Toggle 3D Cockpit Tilt Perspective">
+        <i class="fa-solid fa-cube"></i> 3D Cockpit
+      </button>
+
+      <!-- Audio Mute/Unmute -->
+      <button id="btnToggleAudio" class="btn btn-sound" title="Toggle Synthesized Emergency Siren & Audio">
+        <i id="audioIcon" class="fa-solid fa-volume-high"></i> Audio FX
+      </button>
+
+      <!-- Freeze Animations -->
+      <button id="btnMuteAnimations" class="btn btn-sound" onclick="toggleMuteAnimations()" title="Freeze or Mute on-screen HUD flashing">
+        <i id="animMuteIcon" class="fa-solid fa-wand-magic-sparkles"></i> <span id="animMuteLabel">Animation</span>
+      </button>
+
+      <!-- Siren OFF Dismiss Button -->
+      <button id="btnSirenOff" class="btn btn-siren-off" onclick="turnSirenOff()" title="Immediately Clear Emergency Siren Alert">
+        <i class="fa-solid fa-bell-slash"></i> Siren OFF
+      </button>
+    </div>
+  </header>
+
+  <!-- SPLIT CONTAINER -->
+  <div class="split-container">
+
+    <!-- LEFT PANE: OPTICAL HUD DIGITAL TWIN & AI RADAR -->
+    <div class="left-pane">
+
+      <!-- 1. 3-MODULE WS2811 OPTICAL PIXEL HUD DIGITAL TWIN -->
+      <div class="card hud-hero-card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-lightbulb"></i> 3-Module WS2811 Optical Pixel HUD
+          </div>
+          <div id="ledPatternBadge" style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--accent-cyan); font-weight: 700;">
+            STANDBY / BREATHING CYAN
+          </div>
+        </div>
+
+        <div class="modules-cluster">
+          <!-- Module 3: Left Indicator -->
+          <div id="mod3" class="module-box">
+            <span class="module-tag">Module 3 (Left - GPIO 39)</span>
+            <div class="led-row">
+              <div id="led6" class="pixel-led led-off"></div>
+              <div id="led7" class="pixel-led led-off"></div>
+              <div id="led8" class="pixel-led led-off"></div>
+            </div>
+          </div>
+
+          <!-- Module 2: Center Ambient / Siren -->
+          <div id="mod2" class="module-box active-mod">
+            <span class="module-tag">Module 2 (Center - GPIO 40)</span>
+            <div class="led-row">
+              <div id="led3" class="pixel-led led-off"></div>
+              <div id="led4" class="pixel-led led-off"></div>
+              <div id="led5" class="pixel-led led-off"></div>
+            </div>
+          </div>
+
+          <!-- Module 1: Right Indicator -->
+          <div id="mod1" class="module-box">
+            <span class="module-tag">Module 1 (Right - GPIO 41)</span>
+            <div class="led-row">
+              <div id="led0" class="pixel-led led-off"></div>
+              <div id="led1" class="pixel-led led-off"></div>
+              <div id="led2" class="pixel-led led-off"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subconscious Vision vs Handlebar Phone Mount Infographic -->
+        <div class="perception-grid">
+          <div class="perception-chip">
+            <div class="perception-chip-title"><i class="fa-solid fa-eye"></i> Zero Head Movement</div>
+            <div class="perception-chip-desc">Peripheral light optics guide without taking eyes off road traffic.</div>
+          </div>
+          <div class="perception-chip">
+            <div class="perception-chip-title"><i class="fa-solid fa-ear-deaf"></i> Deaf Rider Native</div>
+            <div class="perception-chip-desc">Replaces inaudible voice GPS with direct intuitive optical flow.</div>
+          </div>
+          <div class="perception-chip">
+            <div class="perception-chip-title"><i class="fa-solid fa-shield-halved"></i> All-Weather Proof</div>
+            <div class="perception-chip-desc">Immune to direct sun glare, road vibrations, and torrential rain.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. AI EMERGENCY SIREN DETECTION & ACOUSTIC RADAR -->
+      <div class="card siren-radar-card">
+        <div class="card-header">
+          <div class="card-title" style="color: #c084fc;">
+            <i class="fa-solid fa-bullhorn"></i> AI Siren Acoustic Radar & Spatial Flank
+          </div>
+          <div id="aiModelBadge" style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #a855f7;">
+            ESP-DL CNN (96.8% Conf)
+          </div>
+        </div>
+
+        <div class="radar-stats-grid">
+          <!-- Left Microphone -->
+          <div class="mic-channel-box">
+            <div class="mic-header">
+              <span><i class="fa-solid fa-microphone"></i> LEFT MIC (GPIO 5,6,7)</span>
+              <span id="leftMicRms">48 dB</span>
+            </div>
+            <div class="vu-bar-outer">
+              <div id="leftVuBar" class="vu-bar-fill" style="width: 25%;"></div>
+            </div>
+          </div>
+
+          <!-- Right Microphone -->
+          <div class="mic-channel-box">
+            <div class="mic-header">
+              <span><i class="fa-solid fa-microphone"></i> RIGHT MIC (GPIO 9,10,11)</span>
+              <span id="rightMicRms">52 dB</span>
+            </div>
+            <div class="vu-bar-outer">
+              <div id="rightVuBar" class="vu-bar-fill" style="width: 28%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Siren Emergency Alert Banner -->
+        <div id="sirenBanner" class="siren-alert-banner">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span id="sirenBannerText">EMERGENCY SIREN DETECTED! YIELD ROADWAY</span>
+            </div>
+            <button class="btn btn-sm" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.4); padding: 4px 10px; font-size: 11px;" onclick="turnSirenOff()">
+              <i class="fa-solid fa-bell-slash"></i> Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. INTERACTIVE 1-CLICK PRESENTATION TEST DECK -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" style="color: #38bdf8;">
+            <i class="fa-solid fa-hand-pointer"></i> 1-Click Interactive Presentation Cues
+          </div>
+          <span style="font-size: 11px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">
+            <i class="fa-solid fa-arrows-up-down"></i> Scroll Cues
+          </span>
+        </div>
+
+        <div class="triggers-grid">
+          <button class="btn-trig" onclick="triggerNav('R', 100, '➡️ Right Turn in 100m', 'Right Blue Pulse')">
+            <i class="fa-solid fa-arrow-right" style="color: #60a5fa;"></i>
+            <span>R 100m</span>
+          </button>
+          <button class="btn-trig" onclick="triggerNav('R', 50, '➡️ Right Turn in 50m', 'Right Green Pulse')">
+            <i class="fa-solid fa-arrow-right" style="color: #34d399;"></i>
+            <span>R 50m</span>
+          </button>
+          <button class="btn-trig" onclick="triggerNav('R', 0, '➡️ Turn Right Now!', 'Right Orange Wave')">
+            <i class="fa-solid fa-arrow-right" style="color: #fbbf24;"></i>
+            <span>R Turn!</span>
+          </button>
+
+          <button class="btn-trig" onclick="triggerNav('L', 100, '⬅️ Left Turn in 100m', 'Left Blue Pulse')">
+            <i class="fa-solid fa-arrow-left" style="color: #60a5fa;"></i>
+            <span>L 100m</span>
+          </button>
+          <button class="btn-trig" onclick="triggerNav('L', 50, '⬅️ Left Turn in 50m', 'Left Green Pulse')">
+            <i class="fa-solid fa-arrow-left" style="color: #34d399;"></i>
+            <span>L 50m</span>
+          </button>
+          <button class="btn-trig" onclick="triggerNav('L', 0, '⬅️ Turn Left Now!', 'Left Orange Wave')">
+            <i class="fa-solid fa-arrow-left" style="color: #fbbf24;"></i>
+            <span>L Turn!</span>
+          </button>
+
+          <button class="btn-trig trig-siren" onclick="testSirenAlert()">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>🚨 Siren Alert</span>
+          </button>
+          <button class="btn-trig trig-off" onclick="turnSirenOff()">
+            <i class="fa-solid fa-bell-slash"></i>
+            <span>🔕 Siren OFF</span>
+          </button>
+          <button class="btn-trig" onclick="triggerNav('UR', 0, '↪️ Right U-Turn Now', 'Modules 1 & 2 Wave')">
+            <i class="fa-solid fa-arrow-rotate-right" style="color: #fb923c;"></i>
+            <span>↪️ U-Turn</span>
+          </button>
+
+          <button class="btn-trig" onclick="triggerNav('REROUTE', 0, '🔄 Re-routing trajectory...', 'All 3 Modules Red')">
+            <i class="fa-solid fa-arrows-rotate" style="color: #f87171;"></i>
+            <span>🔄 Re-route</span>
+          </button>
+          <button class="btn-trig" onclick="triggerNav('IDLE', 0, 'Cruising Normal', 'Cyan Breathing Standby')">
+            <i class="fa-solid fa-circle-check" style="color: #06b6d4;"></i>
+            <span>💠 Standby</span>
+          </button>
+          <button class="btn-trig" style="background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #a7f3d0;" onclick="toggleAutoDemo()">
+            <i class="fa-solid fa-play"></i>
+            <span>▶ Auto Demo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. LIVE HARDWARE TELEMETRY LOG -->
+      <div class="card telemetry-card">
+        <div class="card-header">
+          <div class="card-title" style="color: #94a3b8;">
+            <i class="fa-solid fa-terminal"></i> Wireless Telemetry & Event Console
+          </div>
+          <button class="btn btn-sm" style="padding: 2px 8px; font-size: 11px;" onclick="clearTerminal()">
+            <i class="fa-solid fa-trash-can"></i> Clear
+          </button>
+        </div>
+        <div id="terminalBody" class="terminal-body">
+          <div class="log-line">
+            <span class="log-time">[BOOT]</span>
+            <span class="log-tag system">SYS</span>
+            <span class="log-msg">Smart Helmet AI HUD Initialized. Ready for Presentation.</span>
+          </div>
+          <div class="log-line">
+            <span class="log-time">[AI]</span>
+            <span class="log-tag ai">CNN</span>
+            <span class="log-msg">YAMNet Kerala Siren Detection Neural Net Active on Core 1.</span>
+          </div>
+          <div class="log-line">
+            <span class="log-time">[HUD]</span>
+            <span class="log-tag nav">OPTIC</span>
+            <span class="log-msg">WS2811 Pixel HUD Calibrated (Right=GPIO41, Center=GPIO40, Left=GPIO39).</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANE: SATELLITE MAP & PRESENTATION RUNNER -->
+    <div class="right-pane" id="rightPane">
+
+      <!-- TOP MAP HUD MANEUVER PROMPT -->
+      <div class="map-top-bar">
+        <div id="maneuverIcon" class="maneuver-icon-box">
+          <i class="fa-solid fa-location-arrow"></i>
+        </div>
+        <div class="maneuver-details">
+          <div id="navDistance" class="maneuver-dist">Cruising</div>
+          <div id="navInstruction" class="maneuver-text">Head North along Expressway. Optical Navigation Active.</div>
+        </div>
+        <div class="hud-speed-badge">
+          <div id="hudSpeed">42</div>
+          <div class="hud-speed-unit">KM/H</div>
+        </div>
+      </div>
+
+      <!-- LEAFLET INTERACTIVE MAP -->
+      <div id="map"></div>
+
+      <!-- BOTTOM PRESENTATION TIMELINE & SCENARIO CONTROLS -->
+      <div class="map-bottom-bar">
+        <div class="demo-timeline-header">
+          <div class="demo-stage-badge">
+            <i class="fa-solid fa-play-circle"></i>
+            <span id="currentScenarioLabel">1. CRUISE DEPARTURE</span>
+          </div>
+
+          <div class="demo-controls-btns">
+            <button id="btnPrevScenario" class="btn btn-sm" title="Previous Stage"><i class="fa-solid fa-backward-step"></i></button>
+            <button id="btnPlayDemo" class="btn btn-play" title="Start Automated Judge Presentation"><i class="fa-solid fa-play"></i> Auto Demo</button>
+            <button id="btnNextScenario" class="btn btn-sm" title="Next Stage"><i class="fa-solid fa-forward-step"></i></button>
+          </div>
+        </div>
+
+        <!-- SCENARIO QUICK JUMP TABS -->
+        <div class="scenarios-scroll" id="scenariosPillsContainer">
+          <!-- Filled by JavaScript -->
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    /* =========================================================
+     * 1. AUDIO SYNTHESIZER (Realistic Siren & Sound FX)
+     * ========================================================= */
+    let audioCtx = null;
+    let audioEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.15, gain = 0.1) {
+      if (!audioEnabled) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(gain, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) { }
+    }
+
+    function playChime(isPositive = true) {
+      if (!audioEnabled) return;
+      playTone(isPositive ? 880 : 440, 'sine', 0.12, 0.08);
+      setTimeout(() => playTone(isPositive ? 1174 : 330, 'sine', 0.2, 0.06), 100);
+    }
+
+    let sirenOsc1 = null;
+    let sirenOsc2 = null;
+    let sirenLfo = null;
+    let sirenGain = null;
+    let sirenPanner = null;
+
+    function startSirenSound(side = 'LEFT') {
+      if (!audioEnabled) return;
+      stopSirenSound();
+      try {
+        initAudio();
+        sirenOsc1 = audioCtx.createOscillator();
+        sirenOsc2 = audioCtx.createOscillator();
+        sirenLfo = audioCtx.createOscillator();
+        const lfoGain1 = audioCtx.createGain();
+        const lfoGain2 = audioCtx.createGain();
+        sirenGain = audioCtx.createGain();
+
+        if (audioCtx.createStereoPanner) {
+          sirenPanner = audioCtx.createStereoPanner();
+          sirenPanner.pan.setValueAtTime(side === 'LEFT' ? -0.85 : (side === 'RIGHT' ? 0.85 : 0.0), audioCtx.currentTime);
+        }
+
+        sirenOsc1.type = 'sawtooth';
+        sirenOsc1.frequency.setValueAtTime(750, audioCtx.currentTime);
+
+        sirenOsc2.type = 'sine';
+        sirenOsc2.frequency.setValueAtTime(1500, audioCtx.currentTime);
+
+        sirenLfo.type = 'sine';
+        sirenLfo.frequency.setValueAtTime(1.6, audioCtx.currentTime);
+        lfoGain1.gain.setValueAtTime(380, audioCtx.currentTime);
+        lfoGain2.gain.setValueAtTime(760, audioCtx.currentTime);
+
+        sirenLfo.connect(lfoGain1);
+        lfoGain1.connect(sirenOsc1.frequency);
+        sirenLfo.connect(lfoGain2);
+        lfoGain2.connect(sirenOsc2.frequency);
+
+        sirenGain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+        sirenGain.gain.exponentialRampToValueAtTime(0.22, audioCtx.currentTime + 0.3);
+
+        sirenOsc1.connect(sirenGain);
+        sirenOsc2.connect(sirenGain);
+
+        if (sirenPanner) {
+          sirenGain.connect(sirenPanner);
+          sirenPanner.connect(audioCtx.destination);
+        } else {
+          sirenGain.connect(audioCtx.destination);
+        }
+
+        sirenOsc1.start();
+        sirenOsc2.start();
+        sirenLfo.start();
+      } catch (e) { }
+    }
+
+    function stopSirenSound() {
+      if (sirenOsc1) {
+        try {
+          if (sirenGain) {
+            sirenGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+          }
+          setTimeout(() => {
+            try {
+              if (sirenOsc1) sirenOsc1.stop();
+              if (sirenOsc2) sirenOsc2.stop();
+              if (sirenLfo) sirenLfo.stop();
+              sirenOsc1 = null; sirenOsc2 = null; sirenLfo = null;
+            } catch(e) {}
+          }, 320);
+        } catch (e) {
+          sirenOsc1 = null; sirenOsc2 = null; sirenLfo = null;
+        }
+      }
+    }
+
+    document.getElementById('btnToggleAudio').addEventListener('click', () => {
+      audioEnabled = !audioEnabled;
+      const icon = document.getElementById('audioIcon');
+      if (audioEnabled) {
+        icon.className = 'fa-solid fa-volume-high';
+        playTone(660, 'sine', 0.15, 0.1);
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark';
+        stopSirenSound();
+      }
+    });
+
+    /* =========================================
+       2. TERMINAL LOGGING HELPER
+       ========================================= */
+    const terminalBody = document.getElementById('terminalBody');
+
+    function logTerminal(tag, message, type = 'system') {
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      const now = new Date();
+      const timeStr = `[${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}]`;
+
+      line.innerHTML = `
+        <span class="log-time">${timeStr}</span>
+        <span class="log-tag ${type}">${tag}</span>
+        <span class="log-msg">${message}</span>
+      `;
+      terminalBody.appendChild(line);
+      terminalBody.scrollTop = terminalBody.scrollHeight;
+    }
+
+    function clearTerminal() {
+      terminalBody.innerHTML = '';
+      logTerminal('SYS', 'Terminal buffer cleared.', 'system');
+    }
+
+    /* =========================================
+       3. 9-PIXEL WS2811 HUD ANIMATION ENGINE
+       ========================================= */
+    const pixelElements = [];
+    for (let i = 0; i < 9; i++) {
+      pixelElements.push(document.getElementById(`led${i}`));
+    }
+
+    let activeLedPattern = 'IDLE';
+    let activeLedDist = 0;
+    let sirenAlertActive = false;
+    let animFrame = 0;
+    let animationsMuted = false;
+
+    function toggleMuteAnimations() {
+      animationsMuted = !animationsMuted;
+      const btn = document.getElementById('btnMuteAnimations');
+      const lbl = document.getElementById('animMuteLabel');
+      const icon = document.getElementById('animMuteIcon');
+
+      if (animationsMuted) {
+        setAllPixelsClass('led-off');
+        stopSirenSound();
+        if (isAutoPlaying) pauseAutoDemo();
+        if (btn) {
+          btn.style.background = 'linear-gradient(135deg, #d97706 0%, #b45309 100%)';
+          btn.style.borderColor = '#fbbf24';
+          btn.style.color = '#fff';
+        }
+        if (lbl) lbl.innerText = 'Muted';
+        if (icon) icon.className = 'fa-solid fa-eye-slash';
+        logTerminal('SYS', 'HUD animations frozen.', 'system');
+      } else {
+        if (btn) {
+          btn.style.background = 'rgba(15, 23, 42, 0.8)';
+          btn.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+          btn.style.color = 'var(--text-main)';
+        }
+        if (lbl) lbl.innerText = 'Animation';
+        if (icon) icon.className = 'fa-solid fa-wand-magic-sparkles';
+        logTerminal('SYS', 'HUD animations resumed.', 'system');
+      }
+    }
+
+    function setAllPixelsClass(className) {
+      pixelElements.forEach(el => el.className = `pixel-led ${className}`);
+    }
+
+    function setPixelClass(idx, className) {
+      if (idx >= 0 && idx < 9) {
+        pixelElements[idx].className = `pixel-led ${className}`;
+      }
+    }
+
+    function renderLedFrame() {
+      if (animationsMuted) {
+        setAllPixelsClass('led-off');
+        return;
+      }
+
+      animFrame++;
+
+      // Standby / Idle Cyan Breathing
+      if (activeLedPattern === 'IDLE' && !sirenAlertActive) {
+        setAllPixelsClass('led-off');
+        const isBreatheOn = (Math.floor(animFrame / 10) % 2 === 0);
+        setPixelClass(4, isBreatheOn ? 'led-standby' : 'led-off'); // Center ambient breath
+        return;
+      }
+
+      // Reroute emergency flash
+      if (activeLedPattern === 'REROUTE') {
+        const blinkOn = (Math.floor(animFrame / 4) % 2 === 0);
+        setAllPixelsClass(blinkOn ? 'led-red' : 'led-off');
+      } else if (activeLedDist > 50 && activeLedDist <= 100) {
+        // 100m Blue pulse
+        const blinkOn = (Math.floor(animFrame / 6) % 2 === 0);
+        const col = blinkOn ? 'led-blue' : 'led-off';
+        applyPatternToModules(activeLedPattern, col);
+      } else if (activeLedDist > 0 && activeLedDist <= 50) {
+        // 50m Green pulse
+        const blinkOn = (Math.floor(animFrame / 4) % 2 === 0);
+        const col = blinkOn ? 'led-green' : 'led-off';
+        applyPatternToModules(activeLedPattern, col);
+      } else if (activeLedDist === 0 && activeLedPattern !== 'IDLE') {
+        // 0m Continuous flowing dynamic orange wave
+        applyMovingWave(activeLedPattern, animFrame);
+      } else {
+        setAllPixelsClass('led-off');
+      }
+
+      // Directional Siren Strobe Overrides
+      if (sirenAlertActive) {
+        const isRed = (Math.floor(animFrame / 3) % 2 === 0);
+        const colClass = isRed ? 'led-red' : 'led-strobe-blue';
+        if (sirenAlertActive === 'LEFT' || sirenAlertActive === 'BOTH' || sirenAlertActive === true) {
+          for (let i = 6; i <= 8; i++) setPixelClass(i, colClass); // Module 3 Left
+        }
+        if (sirenAlertActive === 'RIGHT' || sirenAlertActive === 'BOTH' || sirenAlertActive === true) {
+          for (let i = 0; i <= 2; i++) setPixelClass(i, colClass); // Module 1 Right
+        }
+        if (sirenAlertActive === 'BOTH') {
+          for (let i = 3; i <= 5; i++) setPixelClass(i, isRed ? 'led-strobe-blue' : 'led-red');
+        }
+      }
+
+      // Simulated VU meters activity
+      if (document.getElementById('leftVuBar')) {
+        const baseL = sirenAlertActive ? 85 : (activeLedPattern !== 'IDLE' ? 45 : 22);
+        const randL = baseL + Math.sin(animFrame * 0.4) * 12;
+        document.getElementById('leftVuBar').style.width = `${Math.min(100, Math.max(10, randL))}%`;
+        document.getElementById('leftMicRms').innerText = `${Math.round(randL * 0.9)} dB`;
+
+        const baseR = sirenAlertActive ? 75 : (activeLedPattern !== 'IDLE' ? 42 : 24);
+        const randR = baseR + Math.cos(animFrame * 0.4) * 10;
+        document.getElementById('rightVuBar').style.width = `${Math.min(100, Math.max(10, randR))}%`;
+        document.getElementById('rightMicRms').innerText = `${Math.round(randR * 0.9)} dB`;
+      }
+    }
+
+    function applyPatternToModules(pattern, colorClass) {
+      for (let i = 0; i < 9; i++) setPixelClass(i, 'led-off');
+
+      if (pattern === 'R') {
+        for (let i = 0; i <= 2; i++) setPixelClass(i, colorClass); // Module 1 (Right)
+      } else if (pattern === 'L') {
+        for (let i = 6; i <= 8; i++) setPixelClass(i, colorClass); // Module 3 (Left)
+      } else if (pattern === 'SR' || pattern === 'SL') {
+        if (!sirenAlertActive) for (let i = 3; i <= 5; i++) setPixelClass(i, colorClass);
+      } else if (pattern === 'UR') {
+        for (let i = 0; i <= 2; i++) setPixelClass(i, colorClass);
+        if (!sirenAlertActive) for (let i = 3; i <= 5; i++) setPixelClass(i, colorClass);
+      } else if (pattern === 'UL') {
+        for (let i = 6; i <= 8; i++) setPixelClass(i, colorClass);
+        if (!sirenAlertActive) for (let i = 3; i <= 5; i++) setPixelClass(i, colorClass);
+      }
+    }
+
+    function applyMovingWave(pattern, frame) {
+      for (let i = 0; i < 9; i++) setPixelClass(i, 'led-off');
+      const step = Math.floor(frame / 3) % 3;
+
+      if (pattern === 'R' || pattern === 'SR' || pattern === 'UR') {
+        if (pattern === 'R') {
+          for (let i = 0; i <= 2; i++) setPixelClass(i, (i === step) ? 'led-orange' : 'led-off');
+        } else if (pattern === 'SR') {
+          if (!sirenAlertActive) for (let i = 3; i <= 5; i++) setPixelClass(i, ((i - 3) === step) ? 'led-orange' : 'led-off');
+        } else if (pattern === 'UR') {
+          for (let i = 0; i <= 2; i++) setPixelClass(i, (i === step) ? 'led-orange' : 'led-off');
+          if (!sirenAlertActive) for (let i = 3; i <= 5; i++) setPixelClass(i, ((i - 3) === step) ? 'led-orange' : 'led-off');
+        }
+      }
+
+      if (pattern === 'L' || pattern === 'SL' || pattern === 'UL') {
+        const leftStep = 2 - step;
+        if (pattern === 'L') {
+          for (let i = 6; i <= 8; i++) setPixelClass(i, ((i - 6) === leftStep) ? 'led-orange' : 'led-off');
+        } else if (pattern === 'SL') {
+          if (!sirenAlertActive) for (let i = 3; i <= 5; i++) setPixelClass(i, ((i - 3) === leftStep) ? 'led-orange' : 'led-off');
+        } else if (pattern === 'UL') {
+          for (let i = 6; i <= 8; i++) setPixelClass(i, ((i - 6) === leftStep) ? 'led-orange' : 'led-off');
+          if (!sirenAlertActive) for (let i = 3; i <= 5; i++) setPixelClass(i, ((i - 3) === leftStep) ? 'led-orange' : 'led-off');
+        }
+      }
+    }
+
+    // Run LED animation at 30 FPS
+    setInterval(renderLedFrame, 33);
+
+    function updateNavLEDs(pattern, dist) {
+      activeLedPattern = pattern;
+      activeLedDist = dist;
+      const badge = document.getElementById('ledPatternBadge');
+
+      if (pattern === 'IDLE') {
+        badge.innerText = 'STANDBY / BREATHING CYAN';
+        badge.style.color = 'var(--accent-cyan)';
+      } else if (pattern === 'REROUTE') {
+        badge.innerText = '⚠️ REROUTE ALERT (ALL RED)';
+        badge.style.color = '#ef4444';
+        playTone(420, 'sawtooth', 0.25, 0.15);
+      } else {
+        const colName = dist > 50 ? 'BLUE (100m)' : (dist > 0 ? 'GREEN (50m)' : 'FLOWING ORANGE WAVE (NOW)');
+        badge.innerText = `${pattern} @ ${dist}m -> ${colName}`;
+        badge.style.color = dist > 50 ? '#38bdf8' : (dist > 0 ? '#10b981' : '#f59e0b');
+        if (dist === 0) playTone(950, 'sine', 0.1, 0.08);
+      }
+
+      sendNavCommandToHardware(pattern, dist);
+    }
+
+    function setSirenState(detected) {
+      sirenAlertActive = detected;
+      const banner = document.getElementById('sirenBanner');
+      const textSpan = document.getElementById('sirenBannerText');
+      if (detected) {
+        banner.classList.add('active');
+        startSirenSound(detected === 'RIGHT' ? 'RIGHT' : 'LEFT');
+        let msg = "EMERGENCY SIREN DETECTED! YIELD ROADWAY";
+        if (detected === 'LEFT') msg = "🚨 SIREN DETECTED [LEFT FLANK] -> MODULE 3 RED/BLUE STROBE";
+        else if (detected === 'RIGHT') msg = "🚨 SIREN DETECTED [RIGHT FLANK] -> MODULE 1 RED/BLUE STROBE";
+        else if (detected === 'BOTH' || detected === true) msg = "🚨 DUAL SIREN DETECTED -> MODULES 1 & 3 RAPID STROBE";
+        if (textSpan) textSpan.innerText = msg;
+        logTerminal('AI-SIREN', msg, 'siren');
+      } else {
+        banner.classList.remove('active');
+        stopSirenSound();
+        if (map && ambuMarker && map.hasLayer(ambuMarker)) {
+          map.removeLayer(ambuMarker);
+        }
+        logTerminal('AI-SIREN', 'Siren Alert Cleared. Resuming Optical HUD.', 'nav');
+      }
+    }
+
+    function turnSirenOff() {
+      setSirenState(false);
+      // Send Siren OFF to ESP32 over BLE
+      if (chrSiren && bleServer && bleServer.connected) {
+        try {
+          const enc = new TextEncoder();
+          chrSiren.writeValueWithoutResponse(enc.encode('OFF'));
+        } catch (e) { }
+      }
+      // Send Siren OFF over Serial
+      if (serialWriter) {
+        try {
+          serialWriter.write('SIREN:OFF\n');
+          serialWriter.write('NAV:CLEAR,0\n');
+        } catch (e) { }
+      }
+    }
+
+    function testSirenAlert() {
+      if (!sirenAlertActive) {
+        setSirenState('LEFT');
+        const pt = demoWaypoints[scenarios[5].posIndex];
+        const startLat = pt.lat - 0.0006;
+        const startLng = pt.lng - 0.0003;
+        ambuMarker.setLatLng([startLat, startLng]).addTo(map);
+        setTimeout(() => {
+          if (sirenAlertActive) setSirenState(false);
+        }, 8000);
+      } else {
+        turnSirenOff();
+      }
+    }
+
+    async function triggerNav(turn, dist, title, sub) {
+      document.getElementById('navDistance').innerText = (dist > 0) ? `${dist} m` : (turn === 'IDLE' ? 'Cruising' : 'NOW');
+      document.getElementById('navInstruction').innerText = `${title} (${sub})`;
+
+      const iconBox = document.getElementById('maneuverIcon');
+      if (turn === 'R') iconBox.innerHTML = '<i class="fa-solid fa-arrow-right"></i>';
+      else if (turn === 'L') iconBox.innerHTML = '<i class="fa-solid fa-arrow-left"></i>';
+      else if (turn === 'UR') iconBox.innerHTML = '<i class="fa-solid fa-arrow-rotate-right"></i>';
+      else if (turn === 'REROUTE') iconBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i>';
+      else iconBox.innerHTML = '<i class="fa-solid fa-location-arrow"></i>';
+
+      updateNavLEDs(turn, dist);
+      logTerminal('NAV', `Cue Triggered: ${title}`, 'nav');
+    }
+
+    /* =========================================
+       4. LEAFLET GOOGLE SATELLITE & 3D ENGINE
+       ========================================= */
+    const googleHybridLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+
+    const googleStreetsLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+
+    const map = L.map('map', {
+      zoomControl: true,
+      layers: [googleHybridLayer]
+    }).setView([12.9716, 77.5946], 17);
+
+    L.control.layers({
+      "Google Satellite / Hybrid": googleHybridLayer,
+      "Google Streets": googleStreetsLayer
+    }, null, { position: 'topright' }).addTo(map);
+
+    // 3D Motorcycle Custom Marker with Headlight Projection
+    const riderHtml = `
+      <div id="riderMarkerDiv" class="rider-3d-container">
+        <div class="bike-headlight-cone"></div>
+        <div class="bike-chassis-3d">
+          <div class="bike-wheel-front"></div>
+          <div class="bike-bodywork">
+            <div class="rider-helmet-top"></div>
+          </div>
+          <div class="bike-wheel-rear"></div>
+        </div>
+      </div>
+    `;
+    const riderIcon = L.divIcon({ html: riderHtml, className: '', iconSize: [52, 60], iconAnchor: [26, 38] });
+    const riderMarker = L.marker([12.9716, 77.5946], { icon: riderIcon }).addTo(map);
+
+    // 3D Emergency Ambulance with Flashing Strobes & Acoustic Wavefronts
+    const ambuHtml = `
+      <div id="ambuMarkerDiv" class="ambu-3d-container">
+        <div class="ambu-sound-wave"></div>
+        <div class="ambu-sound-wave wave-2"></div>
+        <div class="ambu-van-body">
+          <div class="ambu-roof-lightbar">
+            <div class="strobe-red"></div>
+            <div class="strobe-white"></div>
+            <div class="strobe-blue"></div>
+          </div>
+          <div class="ambu-cross"><i class="fa-solid fa-plus"></i></div>
+          <div class="ambu-stripes"></div>
+        </div>
+      </div>
+    `;
+    const ambuIcon = L.divIcon({ html: ambuHtml, className: '', iconSize: [58, 84], iconAnchor: [29, 42] });
+    const ambuMarker = L.marker([12.9700, 77.5930], { icon: ambuIcon });
+
+    // Route Waypoints
+    const demoWaypoints = [
+      { lat: 12.9716, lng: 77.5946 }, // 0. Start
+      { lat: 12.9724, lng: 77.5946 }, // 1. Approaching Right Turn (100m)
+      { lat: 12.9728, lng: 77.5946 }, // 2. Approaching Right Turn (50m)
+      { lat: 12.9732, lng: 77.5946 }, // 3. Turning Right!
+      { lat: 12.9732, lng: 77.5962 }, // 4. Slight Right Fork
+      { lat: 12.9730, lng: 77.5975 }, // 5. Ambulance Bypass!
+      { lat: 12.9728, lng: 77.5990 }, // 6. Right U-Turn
+      { lat: 12.9722, lng: 77.5980 }, // 7. Slight Left
+      { lat: 12.9715, lng: 77.5970 }, // 8. Missed Route / Rerouting!
+      { lat: 12.9708, lng: 77.5960 }, // 9. Approaching Left Turn (100m)
+      { lat: 12.9704, lng: 77.5955 }, // 10. Approaching Left Turn (50m)
+      { lat: 12.9700, lng: 77.5950 }, // 11. Turning Left!
+      { lat: 12.9690, lng: 77.5950 }, // 12. Left U-Turn
+      { lat: 12.9700, lng: 77.5946 }, // 13. Straight Cruising
+      { lat: 12.9710, lng: 77.5946 }  // 14. Destination
+    ];
+
+    // Glow Route
+    L.polyline(demoWaypoints.map(p => [p.lat, p.lng]), {
+      color: '#06b6d4',
+      weight: 10,
+      opacity: 0.35
+    }).addTo(map);
+
+    L.polyline(demoWaypoints.map(p => [p.lat, p.lng]), {
+      color: '#38bdf8',
+      weight: 4,
+      opacity: 0.95,
+      dashArray: '10, 8'
+    }).addTo(map);
+
+    function toggle3DView() {
+      const pane = document.getElementById('rightPane');
+      const is3D = pane.classList.toggle('perspective-3d');
+      const btn = document.getElementById('btnToggle3D');
+      if (is3D) {
+        btn.style.background = 'rgba(6, 182, 212, 0.3)';
+        btn.style.borderColor = 'var(--accent-cyan)';
+      } else {
+        btn.style.background = '';
+        btn.style.borderColor = '';
+      }
+      setTimeout(() => map.invalidateSize(), 300);
+    }
+
+    /* =========================================
+       5. 14 SCRIPTED PRESENTATION SCENARIOS
+       ========================================= */
+    const scenarios = [
+      {
+        id: 0,
+        title: "1. CRUISE DEPARTURE",
+        navIcon: "fa-arrow-up",
+        distText: "Cruising",
+        instruction: "Route started. Head North along Main Blvd.",
+        speed: "42 km/h",
+        navPattern: "IDLE",
+        navDist: 0,
+        siren: false,
+        posIndex: 0,
+        logMsg: "Departure confirmed. Speed stabilized at 42 km/h."
+      },
+      {
+        id: 1,
+        title: "2. RIGHT TURN AHEAD (100M)",
+        navIcon: "fa-arrow-right",
+        distText: "100 m",
+        instruction: "In 100 meters, prepare to Turn Right onto Oak Street.",
+        speed: "38 km/h",
+        navPattern: "R",
+        navDist: 100,
+        siren: false,
+        posIndex: 1,
+        logMsg: "Navigation Trigger -> Right Turn 100m. Module 1 Blue Pulse active."
+      },
+      {
+        id: 2,
+        title: "3. RIGHT TURN AHEAD (50M)",
+        navIcon: "fa-arrow-right",
+        distText: "50 m",
+        instruction: "In 50 meters, Turn Right onto Oak Street.",
+        speed: "28 km/h",
+        navPattern: "R",
+        navDist: 50,
+        siren: false,
+        posIndex: 2,
+        logMsg: "Navigation Trigger -> Right Turn 50m. Module 1 Green Pulse active."
+      },
+      {
+        id: 3,
+        title: "4. TURN RIGHT NOW (TURN POINT)",
+        navIcon: "fa-arrow-turn-down fa-rotate-270",
+        distText: "NOW",
+        instruction: "Turn Right onto Oak Street now.",
+        speed: "18 km/h",
+        navPattern: "R",
+        navDist: 0,
+        siren: false,
+        posIndex: 3,
+        logMsg: "Navigation Trigger -> Turn Point (0m). Continuous Right-moving Orange Wave on Module 1."
+      },
+      {
+        id: 4,
+        title: "5. SLIGHT RIGHT FORK",
+        navIcon: "fa-share",
+        distText: "50 m",
+        instruction: "Take the Slight Right fork toward Expressway.",
+        speed: "45 km/h",
+        navPattern: "SR",
+        navDist: 50,
+        siren: false,
+        posIndex: 4,
+        logMsg: "Navigation Trigger -> Slight Right (Center Module 2 Green Blink)."
+      },
+      {
+        id: 5,
+        title: "🚨 6. AMBULANCE OVERTAKE & SIREN AI",
+        navIcon: "fa-truck-medical",
+        distText: "YIELD",
+        instruction: "🚨 EMERGENCY AMBULANCE APPROACHING ON LEFT FLANK! PULL OVER SAFELY.",
+        speed: "15 km/h",
+        navPattern: "IDLE",
+        navDist: 0,
+        siren: 'LEFT',
+        posIndex: 5,
+        logMsg: "MIC 2 (I2S1) ESP-DL AI detected emergency siren! High-intensity Red-Blue Strobe on Module 3."
+      },
+      {
+        id: 6,
+        title: "7. RIGHT U-TURN",
+        navIcon: "fa-rotate-right",
+        distText: "NOW",
+        instruction: "Make a Right U-Turn when clear.",
+        speed: "12 km/h",
+        navPattern: "UR",
+        navDist: 0,
+        siren: false,
+        posIndex: 6,
+        logMsg: "Navigation Trigger -> Right U-Turn. Synchronized Orange wave across Modules 1 & 2."
+      },
+      {
+        id: 7,
+        title: "8. SLIGHT LEFT MERGE",
+        navIcon: "fa-reply",
+        distText: "50 m",
+        instruction: "Keep Left and merge onto Pine Ave.",
+        speed: "35 km/h",
+        navPattern: "SL",
+        navDist: 50,
+        siren: false,
+        posIndex: 7,
+        logMsg: "Navigation Trigger -> Slight Left on Center Module 2."
+      },
+      {
+        id: 8,
+        title: "⚠️ 9. ROUTE DEVIATION / REROUTING",
+        navIcon: "fa-triangle-exclamation",
+        distText: "RE-ROUTING",
+        instruction: "Off route! Recalculating optimum trajectory...",
+        speed: "30 km/h",
+        navPattern: "REROUTE",
+        navDist: 0,
+        siren: false,
+        posIndex: 8,
+        logMsg: "GPS deviation detected. Rerouting alert broadcast -> All 9 LEDs flashing RED."
+      },
+      {
+        id: 9,
+        title: "10. LEFT TURN AHEAD (100M)",
+        navIcon: "fa-arrow-left",
+        distText: "100 m",
+        instruction: "New path confirmed: In 100 meters, Turn Left onto Elm St.",
+        speed: "38 km/h",
+        navPattern: "L",
+        navDist: 100,
+        siren: false,
+        posIndex: 9,
+        logMsg: "Navigation Trigger -> Left Turn 100m. Module 3 Blue Pulse active."
+      },
+      {
+        id: 10,
+        title: "11. LEFT TURN AHEAD (50M)",
+        navIcon: "fa-arrow-left",
+        distText: "50 m",
+        instruction: "In 50 meters, Turn Left onto Elm St.",
+        speed: "25 km/h",
+        navPattern: "L",
+        navDist: 50,
+        siren: false,
+        posIndex: 10,
+        logMsg: "Navigation Trigger -> Left Turn 50m. Module 3 Green Pulse active."
+      },
+      {
+        id: 11,
+        title: "12. TURN LEFT NOW (TURN POINT)",
+        navIcon: "fa-arrow-turn-down fa-rotate-90",
+        distText: "NOW",
+        instruction: "Turn Left onto Elm St now.",
+        speed: "16 km/h",
+        navPattern: "L",
+        navDist: 0,
+        siren: false,
+        posIndex: 11,
+        logMsg: "Navigation Trigger -> Turn Point (0m). Continuous Left-moving Orange Wave on Module 3."
+      },
+      {
+        id: 12,
+        title: "13. LEFT U-TURN",
+        navIcon: "fa-rotate-left",
+        distText: "NOW",
+        instruction: "Perform Left U-Turn into destination driveway.",
+        speed: "10 km/h",
+        navPattern: "UL",
+        navDist: 0,
+        siren: false,
+        posIndex: 12,
+        logMsg: "Navigation Trigger -> Left U-Turn. Synchronized wave across Modules 2 & 3."
+      },
+      {
+        id: 13,
+        title: "14. DESTINATION ARRIVED",
+        navIcon: "fa-flag-checkered",
+        distText: "ARRIVED",
+        instruction: "You have arrived at your destination safely. Trip Complete!",
+        speed: "0 km/h",
+        navPattern: "IDLE",
+        navDist: 0,
+        siren: false,
+        posIndex: 14,
+        logMsg: "Trip ended successfully. Deaf rider arrived safely with subconscious optical guidance."
+      }
+    ];
+
+    // Populate scenario pills
+    const pillsContainer = document.getElementById('scenariosPillsContainer');
+    scenarios.forEach((sc, i) => {
+      const pill = document.createElement('div');
+      pill.className = `scenario-pill ${sc.siren ? 'siren-pill' : ''} ${i === 0 ? 'active' : ''}`;
+      pill.innerText = sc.title;
+      pill.onclick = () => jumpToScenario(i);
+      pillsContainer.appendChild(pill);
+    });
+
+    let currentScenarioIdx = 0;
+    let isAutoPlaying = false;
+    let autoPlayTimer = null;
+
+    function applyScenario(idx) {
+      if (idx < 0 || idx >= scenarios.length) return;
+      currentScenarioIdx = idx;
+      const sc = scenarios[idx];
+
+      // Update Map Top Bar HUD
+      document.getElementById('maneuverIcon').innerHTML = `<i class="fa-solid ${sc.navIcon}"></i>`;
+      document.getElementById('navDistance').innerText = sc.distText;
+      document.getElementById('navInstruction').innerText = sc.instruction;
+      document.getElementById('hudSpeed').innerText = sc.speed.replace(' km/h', '');
+      document.getElementById('currentScenarioLabel').innerText = sc.title;
+
+      // Update Scenario Pills
+      document.querySelectorAll('.scenario-pill').forEach((pill, i) => {
+        pill.classList.toggle('active', i === idx);
+      });
+
+      // Update Rider Map Marker & Rotate 3D Bike
+      const pt = demoWaypoints[sc.posIndex];
+      riderMarker.setLatLng([pt.lat, pt.lng]);
+      map.panTo([pt.lat, pt.lng], { animate: true });
+
+      let headingDeg = 0;
+      let leanAngle = 0;
+      if (sc.posIndex < demoWaypoints.length - 1) {
+        const nextPt = demoWaypoints[sc.posIndex + 1];
+        const dLng = (nextPt.lng - pt.lng) * Math.cos(pt.lat * Math.PI / 180);
+        const dLat = nextPt.lat - pt.lat;
+        headingDeg = (Math.atan2(dLng, dLat) * 180 / Math.PI + 360) % 360;
+      }
+
+      if (sc.navPattern === 'L' || sc.navPattern === 'UL' || sc.navPattern === 'SL') {
+        leanAngle = -16;
+      } else if (sc.navPattern === 'R' || sc.navPattern === 'UR' || sc.navPattern === 'SR') {
+        leanAngle = 16;
+      }
+
+      const markerDiv = document.getElementById('riderMarkerDiv');
+      if (markerDiv) {
+        markerDiv.style.transform = `rotate(${headingDeg}deg) rotateZ(${leanAngle}deg)`;
+      }
+
+      // Handle Ambulance Simulation in Scenario 5
+      if (sc.id === 5) {
+        const startLat = pt.lat - 0.0007;
+        const startLng = pt.lng - 0.0004;
+        ambuMarker.setLatLng([startLat, startLng]).addTo(map);
+
+        const ambuDiv = document.getElementById('ambuMarkerDiv');
+        if (ambuDiv) ambuDiv.style.transform = `rotate(${headingDeg}deg)`;
+
+        startSirenSound('LEFT');
+
+        setTimeout(() => ambuMarker.setLatLng([pt.lat - 0.0001, pt.lng - 0.0003]), 1000);
+        setTimeout(() => ambuMarker.setLatLng([pt.lat + 0.0004, pt.lng - 0.0001]), 2200);
+        setTimeout(() => ambuMarker.setLatLng([pt.lat + 0.0011, pt.lng + 0.0004]), 3600);
+      } else {
+        if (map.hasLayer(ambuMarker)) map.removeLayer(ambuMarker);
+      }
+
+      // Update LEDs & Siren
+      setSirenState(sc.siren);
+      updateNavLEDs(sc.navPattern, sc.navDist);
+
+      logTerminal('JOURNEY', sc.logMsg, sc.siren ? 'siren' : 'nav');
+    }
+
+    function jumpToScenario(idx) {
+      if (isAutoPlaying) pauseAutoDemo();
+      applyScenario(idx);
+    }
+
+    document.getElementById('btnNextScenario').addEventListener('click', () => {
+      if (currentScenarioIdx < scenarios.length - 1) jumpToScenario(currentScenarioIdx + 1);
+    });
+
+    document.getElementById('btnPrevScenario').addEventListener('click', () => {
+      if (currentScenarioIdx > 0) jumpToScenario(currentScenarioIdx - 1);
+    });
+
+    // Auto Presentation Runner
+    const btnPlayDemo = document.getElementById('btnPlayDemo');
+
+    function toggleAutoDemo() {
+      if (isAutoPlaying) {
+        pauseAutoDemo();
+      } else {
+        startAutoDemo();
+      }
+    }
+
+    function startAutoDemo() {
+      isAutoPlaying = true;
+      btnPlayDemo.classList.add('playing');
+      btnPlayDemo.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+      playChime(true);
+
+      function step() {
+        if (!isAutoPlaying) return;
+        if (currentScenarioIdx < scenarios.length - 1) {
+          applyScenario(currentScenarioIdx + 1);
+          const delay = (scenarios[currentScenarioIdx].siren) ? 4600 : 3200;
+          autoPlayTimer = setTimeout(step, delay);
+        } else {
+          pauseAutoDemo();
+          playChime(true);
+        }
+      }
+
+      if (currentScenarioIdx >= scenarios.length - 1) {
+        applyScenario(0);
+      }
+      autoPlayTimer = setTimeout(step, 2000);
+    }
+
+    function pauseAutoDemo() {
+      isAutoPlaying = false;
+      if (autoPlayTimer) clearTimeout(autoPlayTimer);
+      btnPlayDemo.classList.remove('playing');
+      btnPlayDemo.innerHTML = '<i class="fa-solid fa-play"></i> Auto Demo';
+    }
+
+    btnPlayDemo.addEventListener('click', toggleAutoDemo);
+
+    // Initial Load
+    applyScenario(0);
+
+    /* =========================================
+       6. WEB BLUETOOTH & WEB SERIAL (HARDWARE)
+       ========================================= */
+    const BLE_SERVICE_UUID  = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+    const CHR_NAV_UUID      = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+    const CHR_SIREN_UUID    = 'beb5483e-36e1-4688-b7f5-ea07361b26aa';
+    const CHR_LOG_UUID      = 'beb5483e-36e1-4688-b7f5-ea07361b26ab';
+
+    let bleDevice = null;
+    let bleServer = null;
+    let chrNav = null;
+    let chrSiren = null;
+    let chrLog = null;
+
+    let serialPort = null;
+    let serialWriter = null;
+
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+
+    function setConnectedUI(type) {
+      statusDot.className = 'status-dot connected';
+      statusText.innerText = `CONNECTED (${type})`;
+      logTerminal('SYNC', `Live Hardware Sync Active via ${type}.`, 'ble');
+      playChime(true);
+    }
+
+    // Web Bluetooth Pairing
+    document.getElementById('btnConnectBLE').addEventListener('click', async () => {
+      if (!navigator.bluetooth) {
+        alert("Web Bluetooth is supported on Google Chrome and Microsoft Edge over HTTPS/localhost.");
+        return;
+      }
+      try {
+        logTerminal('BLE', 'Searching for "SmartHelmet" BLE peripheral...', 'ble');
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [
+            { name: 'SmartHelmet' },
+            { namePrefix: 'Smart' }
+          ],
+          optionalServices: [BLE_SERVICE_UUID]
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', () => {
+          statusDot.className = 'status-dot simulating';
+          statusText.innerText = 'VIRTUAL SIMULATOR';
+          logTerminal('BLE', 'ESP32-S3 Disconnected.', 'ble');
+        });
+
+        bleServer = await bleDevice.gatt.connect();
+        const service = await bleServer.getPrimaryService(BLE_SERVICE_UUID);
+
+        chrNav = await service.getCharacteristic(CHR_NAV_UUID);
+        chrSiren = await service.getCharacteristic(CHR_SIREN_UUID);
+
+        await chrSiren.startNotifications();
+        chrSiren.addEventListener('characteristicvaluechanged', (e) => {
+          const val = e.target.value.getUint8(0);
+          setSirenState(val === 1 ? 'BOTH' : false);
+        });
+
+        try {
+          chrLog = await service.getCharacteristic(CHR_LOG_UUID);
+          await chrLog.startNotifications();
+          chrLog.addEventListener('characteristicvaluechanged', (e) => {
+            const dec = new TextDecoder('utf-8');
+            const msg = dec.decode(e.target.value);
+            logTerminal('ESP32', msg, 'ble');
+          });
+        } catch (err) { }
+
+        setConnectedUI('BLE WIRELESS');
+      } catch (err) {
+        logTerminal('BLE', `Pairing failed or cancelled: ${err.message}`, 'system');
+      }
+    });
+
+    // Web Serial Pairing (USB / COM)
+    document.getElementById('btnConnectSerial').addEventListener('click', async () => {
+      if (!navigator.serial) {
+        alert("Web Serial requires Google Chrome or Microsoft Edge on PC over localhost or HTTPS.");
+        return;
+      }
+      try {
+        logTerminal('UART', 'Requesting USB Serial Port (Select ESP32-S3 COM port)...', 'system');
+        serialPort = await navigator.serial.requestPort();
+        await serialPort.open({ baudRate: 115200 });
+
+        setConnectedUI('SERIAL COM');
+        logTerminal('UART', 'Serial Port Connected at 115200 baud!', 'system');
+
+        const textDecoder = new TextDecoderStream();
+        serialPort.readable.pipeTo(textDecoder.writable);
+        const reader = textDecoder.readable.getReader();
+        const textEncoder = new TextEncoderStream();
+        textEncoder.readable.pipeTo(serialPort.writable);
+        serialWriter = textEncoder.writable.getWriter();
+
+        (async () => {
+          let lineBuffer = '';
+          while (serialPort && serialPort.readable) {
+            try {
+              const { value, done } = await reader.read();
+              if (done) break;
+              if (value) {
+                lineBuffer += value;
+                let lines = lineBuffer.split('\n');
+                lineBuffer = lines.pop();
+                for (const line of lines) {
+                  const trimmed = line.trim();
+                  if (trimmed) {
+                    logTerminal('UART', trimmed, 'system');
+                    if (trimmed.includes('SIREN CONFIRMED: LEFT') || trimmed.includes('LEFT Siren Detected')) {
+                      setSirenState('LEFT');
+                    } else if (trimmed.includes('SIREN CONFIRMED: RIGHT') || trimmed.includes('RIGHT Siren Detected')) {
+                      setSirenState('RIGHT');
+                    } else if (trimmed.includes('SIREN CONFIRMED: BOTH') || trimmed.includes('DUAL Siren Detected')) {
+                      setSirenState('BOTH');
+                    } else if (trimmed.includes('Siren cleared') || trimmed.includes('returned to normal')) {
+                      setSirenState(false);
+                    }
+                  }
+                }
+              }
+            } catch (err) { break; }
+          }
+        })();
+      } catch (err) {
+        logTerminal('UART', `Serial error: ${err.message}`, 'system');
+      }
+    });
+
+    async function sendNavCommandToHardware(turnType, dist) {
+      const packet = (turnType === 'REROUTE') ? 'REROUTE' : `${turnType},${dist}`;
+      if (chrNav && bleServer && bleServer.connected) {
+        try {
+          const enc = new TextEncoder();
+          await chrNav.writeValueWithoutResponse(enc.encode(packet));
+        } catch (e) { }
+      }
+      if (serialWriter) {
+        try {
+          await serialWriter.write(`NAV:${packet}\n`);
+        } catch (e) { }
+      }
+    }
+  </script>
+</body>
+</html>

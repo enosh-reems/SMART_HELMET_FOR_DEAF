@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Smart Helmet - Visor Controller</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card: #131b2e;
+      --accent: #00e5ff;
+      --open-color: #00e676;
+      --close-color: #ff1744;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 20%, #1e293b, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 16px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title span {
+      background: rgba(0, 229, 255, 0.15);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .btn-connect {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid #334155;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-connect.connected {
+      background: rgba(0, 230, 118, 0.15);
+      border-color: var(--open-color);
+      color: var(--open-color);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
+    .btn-connect.connected .dot {
+      background: var(--open-color);
+      box-shadow: 0 0 8px var(--open-color);
+    }
+
+    /* Main Big Visor Control Area */
+    main {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      margin: auto 0;
+    }
+
+    .visor-status-card {
+      background: rgba(19, 27, 46, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 24px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .visor-state-label {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+    }
+
+    .visor-state-value {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: #94a3b8;
+      transition: color 0.3s;
+    }
+
+    .visor-state-value.open {
+      color: var(--open-color);
+      text-shadow: 0 0 20px rgba(0, 230, 118, 0.4);
+    }
+
+    .visor-state-value.closed {
+      color: var(--close-color);
+      text-shadow: 0 0 20px rgba(255, 23, 68, 0.4);
+    }
+
+    /* Giant Touch Button */
+    .btn-giant-visor {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #162035, #0d1424);
+      border: 4px solid #202d4a;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+      position: relative;
+    }
+
+    .btn-giant-visor:active {
+      transform: scale(0.95);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-giant-visor.is-open {
+      border-color: var(--open-color);
+      box-shadow: 0 0 40px rgba(0, 230, 118, 0.25);
+    }
+
+    .btn-giant-visor.is-closed {
+      border-color: var(--close-color);
+      box-shadow: 0 0 40px rgba(255, 23, 68, 0.25);
+    }
+
+    .visor-icon {
+      width: 64px;
+      height: 64px;
+      stroke: var(--text);
+      stroke-width: 2;
+      fill: none;
+      transition: stroke 0.3s;
+    }
+
+    .btn-giant-visor.is-open .visor-icon {
+      stroke: var(--open-color);
+    }
+
+    .btn-giant-visor.is-closed .visor-icon {
+      stroke: var(--close-color);
+    }
+
+    .btn-label {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .btn-sub {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* Dual Action Mini Buttons */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .btn-action {
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-action.open {
+      background: rgba(0, 230, 118, 0.1);
+      color: var(--open-color);
+      border-color: rgba(0, 230, 118, 0.3);
+    }
+
+    .btn-action.open:active {
+      background: var(--open-color);
+      color: #000;
+    }
+
+    .btn-action.close {
+      background: rgba(255, 23, 68, 0.1);
+      color: var(--close-color);
+      border-color: rgba(255, 23, 68, 0.3);
+    }
+
+    .btn-action.close:active {
+      background: var(--close-color);
+      color: #fff;
+    }
+
+    /* Status log toast */
+    footer {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding-top: 16px;
+    }
+
+    #log-text {
+      background: #080c14;
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      color: var(--accent);
+      font-family: monospace;
+      font-size: 11px;
+      margin-top: 8px;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="title">
+      Smart Helmet <span>BLE</span>
+    </div>
+    <button class="btn-connect" id="connectBtn" onclick="toggleConnect()">
+      <div class="dot"></div>
+      <span id="connectText">Connect</span>
+    </button>
+  </header>
+
+  <main>
+    <div class="visor-status-card">
+      <div class="visor-state-label">Visor Status</div>
+      <div class="visor-state-value closed" id="statusText">CLOSED</div>
+    </div>
+
+    <!-- Giant 1-Touch Toggle Button -->
+    <button class="btn-giant-visor is-closed" id="giantBtn" onclick="sendVisorCommand('TOGGLE')">
+      <svg class="visor-icon" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+        <path d="M7 11h10v2H7z"/>
+      </svg>
+      <div class="btn-label" id="btnActionLabel">TAP TO OPEN</div>
+      <div class="btn-sub">M1=90°, M2=90°</div>
+    </button>
+
+    <!-- Dedicated Open / Close Controls -->
+    <div class="action-grid">
+      <button class="btn-action open" onclick="sendVisorCommand('OPEN')">
+        ▲ OPEN
+      </button>
+      <button class="btn-action close" onclick="sendVisorCommand('CLOSE')">
+        ▼ CLOSE
+      </button>
+    </div>
+  </main>
+
+  <footer>
+    <div id="log-text">Click Connect to pair with SmartHelmet</div>
+  </footer>
+
+  <script>
+    const SERVICE_UUID    = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+    const CHAR_VISOR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a9";
+
+    let bleDevice = null;
+    let visorChar = null;
+    let isVisorOpen = false;
+
+    function log(msg) {
+      document.getElementById('log-text').innerText = msg;
+      console.log(msg);
+    }
+
+    async function toggleConnect() {
+      if (bleDevice && bleDevice.gatt.connected) {
+        bleDevice.gatt.disconnect();
+        return;
+      }
+
+      try {
+        log("Scanning for 'SmartHelmet'...");
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ name: 'SmartHelmet' }],
+          optionalServices: [SERVICE_UUID]
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+        log("Connecting to GATT Server...");
+        const server = await bleDevice.gatt.connect();
+
+        log("Discovering Visor Service...");
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        visorChar = await service.getCharacteristic(CHAR_VISOR_UUID);
+
+        // Update UI
+        document.getElementById('connectBtn').classList.add('connected');
+        document.getElementById('connectText').innerText = "Connected";
+        log("Connected to SmartHelmet! Ready to control visor.");
+
+        // Read initial visor state
+        try {
+          const val = await visorChar.readValue();
+          updateVisorUI(val.getUint8(0) === 1);
+        } catch(e) {}
+
+      } catch (err) {
+        log("BLE Error: " + err.message);
+        onDisconnected();
+      }
+    }
+
+    function onDisconnected() {
+      document.getElementById('connectBtn').classList.remove('connected');
+      document.getElementById('connectText').innerText = "Connect";
+      visorChar = null;
+      log("Disconnected from SmartHelmet");
+    }
+
+    async function sendVisorCommand(cmd) {
+      if (!visorChar) {
+        log("Not connected! Tap 'Connect' at the top first.");
+        return;
+      }
+
+      try {
+        log("Sending command: " + cmd + "...");
+        const enc = new TextEncoder();
+        await visorChar.writeValue(enc.encode(cmd));
+
+        if (cmd === 'OPEN') {
+          updateVisorUI(true);
+        } else if (cmd === 'CLOSE') {
+          updateVisorUI(false);
+        } else if (cmd === 'TOGGLE') {
+          updateVisorUI(!isVisorOpen);
+        }
+
+        log("Command executed: " + cmd);
+      } catch (err) {
+        log("Send failed: " + err.message);
+      }
+    }
+
+    function updateVisorUI(open) {
+      isVisorOpen = open;
+      const statusText = document.getElementById('statusText');
+      const giantBtn   = document.getElementById('giantBtn');
+      const label      = document.getElementById('btnActionLabel');
+
+      if (open) {
+        statusText.innerText = "OPEN";
+        statusText.className = "visor-state-value open";
+        giantBtn.className   = "btn-giant-visor is-open";
+        label.innerText      = "TAP TO CLOSE";
+      } else {
+        statusText.innerText = "CLOSED";
+        statusText.className = "visor-state-value closed";
+        giantBtn.className   = "btn-giant-visor is-closed";
+        label.innerText      = "TAP TO OPEN";
+      }
+    }
+  </script>
+</body>
+</html>
